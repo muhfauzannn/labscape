@@ -43,7 +43,7 @@
   background:
     linear-gradient(#ffffffed, #ffffffed) padding-box,
     conic-gradient(
-        from var(--labai-announcement-border-angle),
+        from var(--labscape-announcement-border-angle),
         #ffffff 0deg 274deg,
         #d9eff6 300deg,
         var(--sky) 322deg,
@@ -248,16 +248,6 @@
   /* Matches the tools' own backdrop, so the screenshot runs edge to edge without a seam. */
   background: linear-gradient(180deg, #e7f1f7 0%, #f6f8f8 60%, #fafaf9 100%);
 }
-.matchNote {
-  min-height: 0;
-  margin: 0 auto;
-  color: #fff;
-  font-size: var(--text-xs);
-  text-shadow: 0 1px 8px #10445e88;
-}
-.matchNote[data-visible="true"] {
-  margin: calc(var(--space-2) * -1) auto var(--space-3);
-}
 .shot {
   position: absolute;
   inset: 0;
@@ -406,14 +396,14 @@
     opacity: 1;
   }
 }
-@property --labai-announcement-border-angle {
+@property --labscape-announcement-border-angle {
   syntax: "<angle>";
   inherits: false;
   initial-value: 0deg;
 }
 @keyframes announcement-border-shine {
   to {
-    --labai-announcement-border-angle: 360deg;
+    --labscape-announcement-border-angle: 360deg;
   }
 }
 @media (min-width: 1600px) {
@@ -515,7 +505,7 @@
   }
   .hero [data-hero-enter].announcement {
     animation: hero-fade 140ms var(--ease) both;
-    --labai-announcement-border-angle: 0deg;
+    --labscape-announcement-border-angle: 0deg;
   }
   .productContent {
     transition: opacity 140ms var(--ease) !important;

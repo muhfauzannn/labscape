@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Heading, Text } from "@/components/ui/typography";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { matchTool, toolCatalog, toolHref, type ToolId } from "@/lib/tool-catalog";
+import { askHref, toolCatalog, toolHref, type ToolId } from "@/lib/tool-catalog";
 import styles from "./hero.module.css";
 
 const quickTools: ToolId[] = ["rocket", "engine", "printer", "microscope-lab"];
@@ -68,10 +68,10 @@ const previews = {
     icon: AudioLines,
     tone: "lilac",
     badge: "Labscape AI",
-    heading: ["Stuck? Just ask,", "out loud."],
-    text: "Labscape AI sees the tool you have open and what it is doing right now. Ask why the piston moves and it explains, or have it work the controls for you.",
+    heading: ["Stuck? Just ask.", "Type it or say it."],
+    text: "Labscape AI sees the tool you have open and what it is doing right now. Type a question or ask out loud: it explains why the piston moves, or works the controls for you.",
     points: [
-      { icon: Mic, text: "Talk in Bahasa Indonesia or English" },
+      { icon: Mic, text: "Type or talk, in Bahasa Indonesia or English" },
       { icon: Eye, text: "Knows what is on your screen" },
       { icon: Hand, text: "Works the controls when you ask" },
     ],
@@ -84,7 +84,6 @@ const previews = {
 export function Hero() {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
-  const [noMatch, setNoMatch] = useState(false);
   const [kind, setKind] = useState<PreviewKind>("explore");
   const [tabDirection, setTabDirection] = useState<"forward" | "backward" | "none">("none");
   const currentKind = useRef<PreviewKind>("explore");
@@ -114,10 +113,9 @@ export function Hero() {
     return () => window.removeEventListener("hashchange", selectPreviewFromHash);
   }, [changeKind]);
 
-  function explore(value: string) {
-    const match = matchTool(value);
-    if (match) router.push(toolHref(match));
-    else setNoMatch(Boolean(value.trim()));
+  /** Opens the tool that fits the question, where Labscape AI answers it straight away. */
+  function ask(value: string) {
+    router.push(askHref(value));
   }
 
   return (
@@ -128,7 +126,7 @@ export function Hero() {
         <div className={styles.heroCopy}>
           <Link href={toolHref("engine")} className={styles.announcement} data-hero-enter>
             <Badge tone="butter">New</Badge>
-            <span>Ask the tools out loud with Labscape AI</span>
+            <span>Ask Labscape AI by typing or talking</span>
             <ArrowRight aria-hidden="true" size={14} />
           </Link>
           <Heading as="h1" size="display" id="hero-heading" className={styles.heroHeading} data-hero-enter>
@@ -144,33 +142,26 @@ export function Hero() {
             data-hero-enter
             onSubmit={(event) => {
               event.preventDefault();
-              explore(prompt);
+              ask(prompt);
             }}
           >
             <div className={styles.promptInput}>
               <Sparkles aria-hidden="true" size={21} />
               <label className={styles.srOnly} htmlFor="hero-prompt">
-                What do you want to understand?
+                Ask Labscape AI a question
               </label>
               <Input
                 id="hero-prompt"
-                placeholder="How does a rocket lift off?"
+                placeholder="Ask anything, like how does a rocket lift off?"
                 value={prompt}
-                maxLength={80}
-                aria-describedby="hero-prompt-note"
-                onChange={(event) => {
-                  setPrompt(event.target.value);
-                  setNoMatch(false);
-                }}
+                maxLength={200}
+                onChange={(event) => setPrompt(event.target.value)}
               />
               <Button type="submit">
-                Explore <ArrowRight aria-hidden="true" size={16} />
+                Ask AI <ArrowRight aria-hidden="true" size={16} />
               </Button>
             </div>
           </form>
-          <p id="hero-prompt-note" className={styles.matchNote} aria-live="polite" data-visible={noMatch}>
-            {noMatch ? "No machine for that yet. Try a rocket, an engine, a microscope or a 3D printer." : ""}
-          </p>
           <div className={styles.suggestions} data-hero-enter>
             <span>Or open</span>
             {quickTools.map((id) => (
@@ -187,7 +178,7 @@ export function Hero() {
         <div className={styles.productShell} id="learn" data-hero-enter>
           <Tabs value={kind} onValueChange={changeKind}>
             <TabsList
-              aria-label="How you learn with Labai"
+              aria-label="How you learn with Labscape"
               className={styles.productTabs}
               onPointerDownCapture={() => {
                 tabChangeSource.current = "pointer";
@@ -272,7 +263,7 @@ export function Hero() {
       </section>
       <footer className={styles.footer}>
         <span>
-          labai. <span>Learn how things work.</span>
+          labscape. <span>Learn how things work.</span>
         </span>
         <Link href="/start">
           Interactive tools <ArrowRight aria-hidden="true" size={14} />

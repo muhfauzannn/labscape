@@ -66,7 +66,7 @@ const learnLinks: NavigationCardProps[] = [
   },
   {
     title: "Ask AI",
-    description: "Ask out loud and get an answer about what you see.",
+    description: "Type or talk, and get an answer about what you see.",
     href: "/#learn-ask",
     icon: AudioLines,
   },
@@ -89,11 +89,11 @@ const resourceLinks: NavigationCardProps[] = [
 
 function Brand() {
   return (
-    <Link href="/" className={styles.brand} aria-label="Labai home">
+    <Link href="/" className={styles.brand} aria-label="Labscape home">
       <span className={styles.mark}>
         <Layers2 aria-hidden="true" size={21} strokeWidth={2.5} />
       </span>
-      labai<span className={styles.dot}>.</span>
+      labscape<span className={styles.dot}>.</span>
     </Link>
   );
 }
@@ -156,7 +156,7 @@ function MenuSection({
 function MobileNavigation({ onNavigate }: { onNavigate: () => void }) {
   return (
     <nav className={styles.mobileNav} aria-label="Mobile navigation">
-      <span className={styles.mobileEyebrow}>Explore Labai</span>
+      <span className={styles.mobileEyebrow}>Explore Labscape</span>
       <div className={styles.mobileGroup}>
         <span>Tools</span>
         {toolLinks.map((link) => (
@@ -247,8 +247,8 @@ export function SiteHeader({ overlay = false, closeOnMount = false }: { overlay?
                     <Mic aria-hidden="true" size={18} />
                   </span>
                   <span>
-                    <strong>Press the orb and ask out loud.</strong>
-                    <span>Talk in Bahasa Indonesia or English. Drag the orb anywhere on the page.</span>
+                    <strong>Type a question, or press the orb to talk.</strong>
+                    <span>In Bahasa Indonesia or English. Drag the orb anywhere on the page.</span>
                   </span>
                   <Link href={toolHref("engine")} className={styles.availabilityBadge}>
                     Try it <ArrowRight aria-hidden="true" size={12} />
@@ -291,7 +291,7 @@ export function SiteHeader({ overlay = false, closeOnMount = false }: { overlay?
       {!closed && <Dialog
         open={mobileOpen}
         onOpenChange={setMobileOpen}
-        title="Explore Labai"
+        title="Explore Labscape"
         description="Open a tool, see how it works, or meet the AI tutor."
       >
         <MobileNavigation onNavigate={() => setMobileOpen(false)} />

@@ -52,3 +52,13 @@ export function matchTool(query: string): ToolId | null {
   }
   return best?.id ?? null;
 }
+
+/** Opens the tool that fits a question and hands the question to the assistant there. */
+export function askHref(question: string) {
+  const text = question.trim().slice(0, 500);
+  const params = new URLSearchParams();
+  const tool = matchTool(text);
+  if (tool) params.set("tool", tool);
+  if (text) params.set("ask", text);
+  return params.size ? `/start?${params}` : "/start";
+}

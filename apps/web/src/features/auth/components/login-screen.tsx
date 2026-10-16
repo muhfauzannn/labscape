@@ -42,8 +42,8 @@ export function LoginScreen() {
     <div className={styles.shell}>
       <div className={styles.formSide}>
         <div className={styles.formContent}>
-          <Link className={styles.brand} href="/" aria-label="Labai home">labai<span>.</span></Link>
-          <h1>Sign in to Labai</h1>
+          <Link className={styles.brand} href="/" aria-label="Labscape home">labscape<span>.</span></Link>
+          <h1>Sign in to Labscape</h1>
           <p className={styles.intro}>Welcome back. Please sign in to continue.</p>
 
           <form onSubmit={submit} className={styles.form}>
@@ -70,7 +70,7 @@ export function LoginScreen() {
         </div>
       </div>
 
-      <aside className={styles.visual} aria-label="Labai interactive learning">
+      <aside className={styles.visual} aria-label="Labscape interactive learning">
         <Image
           className={styles.visualImage}
           src="/images/login-lab.png"

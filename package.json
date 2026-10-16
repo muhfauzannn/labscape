@@ -1,5 +1,5 @@
 {
-  "name": "labai-monorepo",
+  "name": "labscape-monorepo",
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@12.11.2",
@@ -7,12 +7,12 @@
     "node": ">=24.0.0 <25"
   },
   "scripts": {
-    "dev": "pnpm --filter @labai/web dev",
-    "build": "pnpm --filter @labai/web build",
-    "start": "pnpm --filter @labai/web start",
-    "lint": "pnpm --filter @labai/web lint",
-    "typecheck": "pnpm --filter @labai/web typecheck",
-    "check:styles": "pnpm --filter @labai/web check:styles",
+    "dev": "pnpm --filter @labscape/web dev",
+    "build": "pnpm --filter @labscape/web build",
+    "start": "pnpm --filter @labscape/web start",
+    "lint": "pnpm --filter @labscape/web lint",
+    "typecheck": "pnpm --filter @labscape/web typecheck",
+    "check:styles": "pnpm --filter @labscape/web check:styles",
     "api:dev": "node scripts/api-dev.mjs",
     "api:fmt": "go -C apps/api fmt ./...",
     "api:build": "go -C apps/api build ./...",

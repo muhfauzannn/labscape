@@ -12,14 +12,14 @@ export const instant = false;
 
 export default async function DashboardPage() {
   await connection();
-  const token = (await cookies()).get("labai_session")?.value;
+  const token = (await cookies()).get("labscape_session")?.value;
   const user = getSession(token);
   if (!user) redirect("/login");
 
   return (
     <main id="main-content" className={styles.page}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand}>labai<span>.</span></Link>
+        <Link href="/" className={styles.brand}>labscape<span>.</span></Link>
         <LogoutButton />
       </header>
       <section className={styles.content}>

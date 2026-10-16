@@ -21,7 +21,10 @@ const tools = {
 };
 
 export function SvgTools() {
-  const requested = useSearchParams().get("tool");
+  const searchParams = useSearchParams();
+  const requested = searchParams.get("tool");
+  // A question asked on the landing page; read once, then dropped from the address so a reload doesn't resend it.
+  const [question] = useState(() => searchParams.get("ask")?.trim().slice(0, 500) ?? "");
   const [selected, setSelected] = useState<FigureId>(
     () => figures.find((figure) => figure.id === requested)?.id ?? "computer",
   );
@@ -61,6 +64,13 @@ export function SvgTools() {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!question) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("ask");
+    window.history.replaceState(null, "", url);
+  }, [question]);
 
   function selectFigure(id: FigureId) {
     setSelected(id);
@@ -192,7 +202,7 @@ export function SvgTools() {
           <span>{controlsOpen ? "Close controls" : "Controls"}</span>
         </button>
       </div>
-      <LiveAssistant toolId={selected} toolLabel={title} toolRoot={figureRootRef} />
+      <LiveAssistant toolId={selected} toolLabel={title} toolRoot={figureRootRef} initialQuestion={question} />
     </div>
   );
 }

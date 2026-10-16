@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"labai/apps/api/internal/httpapi"
-	"labai/apps/api/internal/live"
+	"labscape/apps/api/internal/httpapi"
+	"labscape/apps/api/internal/live"
 )
 
 const shutdownTimeout = 10 * time.Second

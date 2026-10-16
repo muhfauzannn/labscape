@@ -18,16 +18,20 @@ export const instant = false;
 export default async function StartPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tool?: string | string[] }>;
+  searchParams: Promise<{ tool?: string | string[]; ask?: string | string[] }>;
 }) {
   await connection();
-  const token = (await cookies()).get("labai_session")?.value;
+  const token = (await cookies()).get("labscape_session")?.value;
   if (!getSession(token)) {
-    const requestedTool = (await searchParams).tool;
+    const { tool: requestedTool, ask } = await searchParams;
     const tool = typeof requestedTool === "string" && toolCatalog.some((item) => item.id === requestedTool)
       ? requestedTool
       : null;
-    const destination = tool ? `/start?tool=${encodeURIComponent(tool)}` : "/start";
+    // Keep a question asked on the landing page through sign-in, so the assistant can still answer it.
+    const params = new URLSearchParams();
+    if (tool) params.set("tool", tool);
+    if (typeof ask === "string" && ask.trim()) params.set("ask", ask.trim().slice(0, 500));
+    const destination = params.size ? `/start?${params}` : "/start";
     redirect(`/login?next=${encodeURIComponent(destination)}`);
   }
 
