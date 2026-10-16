@@ -1,7 +1,6 @@
 "use client";
 
-import { Square } from "lucide-react";
-import { Orb, defineOrbTheme, type OrbAdapter, type OrbSignal, type OrbSignalListener } from "orb-ui";
+import Orb from "@/components/react-bits/Orb";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 type AssistantStatus = "idle" | "connecting" | "listening" | "thinking" | "speaking" | "error";
@@ -214,24 +213,6 @@ function stopPlayback(session: LiveSession) {
   session.scheduledAt = session.audio.currentTime;
 }
 
-/** A tiny orb-ui adapter: the session pushes its state and live mic / voice levels into it. */
-type OrbBridge = OrbAdapter & { emit(next: Partial<OrbSignal>): void };
-function createOrbBridge(): OrbBridge {
-  const listeners = new Set<OrbSignalListener>();
-  let signal: OrbSignal = { state: "idle", inputVolume: 0, outputVolume: 0 };
-  return {
-    subscribe(listener) {
-      listeners.add(listener);
-      listener(signal);
-      return () => listeners.delete(listener);
-    },
-    emit(next) {
-      signal = { ...signal, ...next };
-      listeners.forEach((listener) => listener(signal));
-    },
-  };
-}
-
 const levelBuffer = new Float32Array(1024);
 function levelOf(meter: AnalyserNode) {
   meter.getFloatTimeDomainData(levelBuffer);
@@ -240,13 +221,52 @@ function levelOf(meter: AnalyserNode) {
   return Math.min(1, Math.sqrt(sum / levelBuffer.length) * 5);
 }
 
-const ORB_THEME = defineOrbTheme({
-  name: "circle",
-  preset: "calm",
-  appearance: {
-    colors: { idle: "#206487", connecting: "#5f8fb0", listening: "#2f86b4", thinking: "#6f9a63", speaking: "#40663a", error: "#b83e36" },
-  },
-});
+type OrbLook = { speed: number; size: number; glow: number; hover: boolean; colors: string[] };
+const ORB_COLORS = ["#3f95c4", "#7db56b", "#174a66"];
+const ORB_STYLE = { width: "100%", height: "100%" };
+const ORB_ERROR = ["#e0645a", "#f09a6b", "#7a1f1a"];
+
+function orbLook(status: AssistantStatus, level: number): OrbLook {
+  switch (status) {
+    case "connecting": return { speed: 2.4, size: 0.86, glow: 1.1, hover: true, colors: ORB_COLORS };
+    case "listening": return { speed: 1.1 + level * 2, size: 0.9 + level * 0.22, glow: 1.1 + level, hover: true, colors: ORB_COLORS };
+    case "thinking": return { speed: 2.8, size: 0.88, glow: 1.3, hover: true, colors: ORB_COLORS };
+    case "speaking": return { speed: 1.6 + level * 3, size: 0.92 + level * 0.28, glow: 1.3 + level * 1.6, hover: true, colors: ORB_COLORS };
+    case "error": return { speed: 0.6, size: 0.86, glow: 1, hover: false, colors: ORB_ERROR };
+    default: return { speed: 0.7, size: 0.86, glow: 1, hover: false, colors: ORB_COLORS };
+  }
+}
+
+/** React Bits' Orb, driven by the session: its state picks the mood, the live mic or voice level swells it. */
+function VoiceOrb({ status, levelOf }: { status: AssistantStatus; levelOf: () => number }) {
+  const [level, setLevel] = useState(0);
+  const live = status === "listening" || status === "speaking";
+  useEffect(() => {
+    if (!live) return;
+    let smooth = 0;
+    const timer = setInterval(() => {
+      smooth += (levelOf() - smooth) * 0.45;
+      setLevel(Math.round(smooth * 50) / 50);
+    }, 60);
+    return () => clearInterval(timer);
+  }, [live, levelOf]);
+  const look = orbLook(status, live ? level : 0);
+  return (
+    <Orb
+      colors={look.colors}
+      backgroundColor="#ffffff"
+      speed={look.speed}
+      size={look.size}
+      glow={look.glow}
+      forceHoverState={look.hover}
+      hoverIntensity={0.8}
+      followCursor
+      clickPulse
+      dpr={1.5}
+      style={ORB_STYLE}
+    />
+  );
+}
 
 function cleanup(session: LiveSession) {
   session.intentionalClose = true;
@@ -283,7 +303,7 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
   const connectRef = useRef(false);
   const cancelConnectRef = useRef(false);
   const connectAbortRef = useRef<AbortController | null>(null);
-  const [orb] = useState(createOrbBridge);
+
 
   useEffect(() => {
     toolRef.current = { id: toolId, label: toolLabel, root: toolRoot };
@@ -658,18 +678,11 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
     if (session) cleanup(session);
   }, []);
 
-  useEffect(() => {
-    orb.emit({ state: status, inputVolume: 0, outputVolume: 0 });
-    if (status === "idle" || status === "error") return;
-    let frame = 0;
-    const meter = () => {
-      const session = sessionRef.current;
-      if (session) orb.emit({ inputVolume: levelOf(session.inputMeter), outputVolume: levelOf(session.outputMeter) });
-      frame = requestAnimationFrame(meter);
-    };
-    frame = requestAnimationFrame(meter);
-    return () => cancelAnimationFrame(frame);
-  }, [orb, status]);
+  const readLevel = useCallback(() => {
+    const session = sessionRef.current;
+    if (!session) return 0;
+    return Math.max(levelOf(session.inputMeter), levelOf(session.outputMeter));
+  }, []);
 
   const active = status !== "idle" && status !== "error";
   const statusLabel = status === "connecting" ? "Menghubungkan" : status === "listening" ? "Mendengarkan" : status === "thinking" ? "Sebentar ya" : status === "speaking" ? "Labai sedang bicara" : "Asisten suara";
@@ -688,18 +701,23 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
           {userText && status !== "speaking" && <span className="svg-assistant-user-text">Kamu: {userText}</span>}
         </section>
       )}
-      <button
-        className="svg-assistant-trigger"
-        type="button"
-        onClick={toggleSession}
-        aria-label={active ? "Akhiri percakapan suara" : "Tanya alat ini dengan suara"}
-        aria-pressed={active}
-        title={active ? "Akhiri percakapan" : "Tanya alat ini"}
-      >
-        <span className="svg-assistant-mark" aria-hidden="true"><Orb adapter={orb} theme={ORB_THEME} size={30} interactive={false} aria-hidden /></span>
-        <span className="svg-assistant-label">{active ? "Selesai" : "Tanya Labai"}</span>
-        {active && <Square className="svg-assistant-stop" size={10} aria-hidden="true" />}
-      </button>
+      <div className="svg-assistant-dock">
+        {!active && (
+          <span className="svg-assistant-hint" aria-hidden="true" onClick={toggleSession}>
+            Tanya Labai
+          </span>
+        )}
+        <button
+          className="svg-assistant-orb-button"
+          type="button"
+          onClick={toggleSession}
+          aria-label={active ? "Akhiri percakapan suara" : "Tanya alat ini dengan suara"}
+          aria-pressed={active}
+          title={active ? "Akhiri percakapan" : "Tanya alat ini"}
+        >
+          <VoiceOrb status={status} levelOf={readLevel} />
+        </button>
+      </div>
       <span className="svg-assistant-sr" role="status">{error}</span>
     </div>
   );

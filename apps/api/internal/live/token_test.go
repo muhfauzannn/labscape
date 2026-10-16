@@ -29,26 +29,26 @@ func TestCreateTokenUsesSingleConstrainedAudioSession(t *testing.T) {
 			Uses                 int       `json:"uses"`
 			ExpireTime           time.Time `json:"expireTime"`
 			NewSessionExpireTime time.Time `json:"newSessionExpireTime"`
-			Constraints          struct {
-				Model  string `json:"model"`
-				Config struct {
-					SessionResumption  json.RawMessage `json:"sessionResumption"`
-					ResponseModalities []string        `json:"responseModalities"`
-				} `json:"config"`
-			} `json:"liveConnectConstraints"`
+			Setup                struct {
+				Model            string `json:"model"`
+				GenerationConfig struct {
+					ResponseModalities []string `json:"responseModalities"`
+				} `json:"generationConfig"`
+				SessionResumption json.RawMessage `json:"sessionResumption"`
+			} `json:"bidiGenerateContentSetup"`
 		}
 		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
 			t.Errorf("decode token request: %v", err)
 			return &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(bytes.NewReader(nil)), Header: make(http.Header), Request: request}, nil
 		}
-		if body.Uses != 1 || body.Constraints.Model != "models/gemini-3.8-live" {
+		if body.Uses != 1 || body.Setup.Model != "models/gemini-3.8-live" {
 			t.Errorf("token is not restricted to one Gemini Live session: %+v", body)
 		}
-		if len(body.Constraints.Config.ResponseModalities) != 1 || body.Constraints.Config.ResponseModalities[0] != "AUDIO" {
-			t.Errorf("token does not require audio output: %+v", body.Constraints.Config)
+		if len(body.Setup.GenerationConfig.ResponseModalities) != 1 || body.Setup.GenerationConfig.ResponseModalities[0] != "AUDIO" {
+			t.Errorf("token does not require audio output: %+v", body.Setup.GenerationConfig)
 		}
-		if string(body.Constraints.Config.SessionResumption) != "{}" {
-			t.Errorf("token does not constrain session resumption: %s", body.Constraints.Config.SessionResumption)
+		if string(body.Setup.SessionResumption) != "{}" {
+			t.Errorf("token does not enable session resumption: %s", body.Setup.SessionResumption)
 		}
 		if time.Until(body.NewSessionExpireTime) < 0 || time.Until(body.NewSessionExpireTime) > 61*time.Second {
 			t.Errorf("unexpected new-session expiry: %s", body.NewSessionExpireTime)

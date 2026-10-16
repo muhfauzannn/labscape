@@ -32,16 +32,16 @@ type TokenIssuer struct {
 }
 
 type tokenRequest struct {
-	Uses                   int       `json:"uses"`
-	ExpireTime             time.Time `json:"expireTime"`
-	NewSessionExpireTime   time.Time `json:"newSessionExpireTime"`
-	LiveConnectConstraints struct {
-		Model  string `json:"model"`
-		Config struct {
-			SessionResumption  struct{} `json:"sessionResumption"`
+	Uses                     int       `json:"uses"`
+	ExpireTime               time.Time `json:"expireTime"`
+	NewSessionExpireTime     time.Time `json:"newSessionExpireTime"`
+	BidiGenerateContentSetup struct {
+		Model            string `json:"model"`
+		GenerationConfig struct {
 			ResponseModalities []string `json:"responseModalities"`
-		} `json:"config"`
-	} `json:"liveConnectConstraints"`
+		} `json:"generationConfig"`
+		SessionResumption struct{} `json:"sessionResumption"`
+	} `json:"bidiGenerateContentSetup"`
 }
 
 func NewTokenIssuer(apiKey, model string, client *http.Client) *TokenIssuer {
@@ -77,8 +77,8 @@ func (i *TokenIssuer) CreateToken(ctx context.Context) (Token, error) {
 		ExpireTime:           now.Add(15 * time.Minute),
 		NewSessionExpireTime: now.Add(time.Minute),
 	}
-	requestBody.LiveConnectConstraints.Model = "models/" + i.model
-	requestBody.LiveConnectConstraints.Config.ResponseModalities = []string{"AUDIO"}
+	requestBody.BidiGenerateContentSetup.Model = "models/" + i.model
+	requestBody.BidiGenerateContentSetup.GenerationConfig.ResponseModalities = []string{"AUDIO"}
 
 	encoded, err := json.Marshal(requestBody)
 	if err != nil {

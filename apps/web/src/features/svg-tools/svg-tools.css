@@ -761,32 +761,34 @@
 .svg-tools .ml-focus-panel .ml-fine-buttons button:nth-child(2) { color: var(--sky-ink) !important; background: var(--sky-soft) !important; }
 .svg-tools .iso input[type="range"] { accent-color: var(--sky-ink); }
 
-.svg-assistant { position: relative; display: flex; flex: 0 0 auto; align-items: center; }
-.svg-assistant-trigger {
-  display: inline-flex;
-  min-height: var(--control-height);
-  align-items: center;
-  gap: 9px;
-  border: 1px solid transparent;
+.svg-assistant { position: fixed; z-index: 61; right: max(24px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-end; }
+.svg-assistant-dock { display: flex; align-items: center; gap: 10px; }
+.svg-assistant-orb-ui { border-radius: 50%; filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--sky-ink) 35%, transparent)); transition: transform var(--duration-fast) var(--ease); }
+.svg-assistant-orb-ui:active { transform: scale(.95); }
+.svg-assistant-dock { position: relative; }
+.svg-assistant .svg-assistant-launch { background: radial-gradient(circle at 34% 28%, #eaf7ff 0, #6fb3d8 22%, #206487 62%, #40663a 100%) !important; box-shadow: inset 0 -3px 8px #0003; }
+.svg-assistant[data-active="false"] .svg-assistant-orb-ui { position: relative; }
+.svg-assistant[data-active="false"] .svg-assistant-orb-ui::after { content: ""; position: absolute; inset: 6px; border: 1.5px solid var(--sky-ink); border-radius: 50%; opacity: 0; pointer-events: none; animation: svg-assistant-halo 2.6s ease-out infinite; }
+@keyframes svg-assistant-halo { 0% { opacity: .45; transform: scale(.9); } 100% { opacity: 0; transform: scale(1.35); } }
+.svg-assistant-orb-ui :focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: 50%; }
+.svg-assistant-hint {
+  padding: 8px 13px;
+  border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 0 14px 0 6px;
-  background: transparent;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow-control);
   color: var(--ink);
   font: var(--weight-semibold) var(--text-sm) var(--font-sans), Arial, sans-serif;
   cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
+  backdrop-filter: blur(14px);
+  animation: svg-assistant-in 220ms cubic-bezier(.23, 1, .32, 1) both;
+  transform: translateX(6px);
 }
-.svg-assistant-trigger:active { transform: scale(.97); }
-.svg-assistant-trigger[aria-pressed="true"] { border-color: color-mix(in srgb, var(--sky-ink) 22%, var(--border)); background: color-mix(in srgb, var(--sky-soft) 70%, var(--surface)); }
-.svg-assistant-trigger:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
-.svg-assistant-mark { display: inline-flex; flex: none; width: 30px; height: 30px; align-items: center; justify-content: center; pointer-events: none; }
-.svg-assistant-mark > * { flex: none; }
-.svg-assistant-stop { color: var(--ink-muted); fill: currentColor; }
 .svg-assistant-bubble {
   position: absolute;
   z-index: 61;
   right: 0;
-  bottom: calc(100% + 14px);
+  bottom: calc(100% + 12px);
   width: min(336px, calc(100vw - 32px));
   max-height: min(38dvh, 320px);
   overflow-y: auto;
@@ -831,8 +833,8 @@
 @keyframes svg-assistant-cloud { 50% { transform: scale(1.08); } }
 @keyframes svg-assistant-voice { to { transform: scaleY(.55); } }
 @media (hover: hover) and (pointer: fine) {
-  .svg-assistant-trigger:hover { background: var(--surface-subtle); }
-  .svg-assistant-trigger[aria-pressed="true"]:hover { background: color-mix(in srgb, var(--sky-soft) 90%, var(--surface)); }
+  .svg-assistant-orb-ui:hover { transform: scale(1.05); }
+  .svg-assistant-hint:hover { border-color: var(--border-strong); }
 }
 
 @media (max-width: 720px) {
@@ -843,9 +845,8 @@
   .svg-tools-picker-label { display: none; }
   .svg-tools-picker-trigger { min-width: 112px; min-height: var(--control-height); gap: var(--space-2); padding-inline: var(--space-2); font-size: 12px; }
   .svg-tools-controls-toggle { padding: 0 12px; font-size: 12px; }
-  .svg-assistant-trigger { width: 44px; min-width: 44px; justify-content: center; padding: 0; }
-  .svg-assistant-label, .svg-assistant-stop { display: none; }
-  .svg-assistant-bubble { right: -7px; }
+  .svg-assistant { right: 12px; bottom: calc(max(20px, env(safe-area-inset-bottom)) + 74px); }
+  .svg-assistant-hint { display: none; }
   .svg-tools .rocket-art { max-width: min(100%, calc((100dvh - 265px) * 1.08)); }
   .svg-tools .rocket-telemetry { grid-template-columns: repeat(2,1fr); gap: 14px; }
   .svg-tools .engine-gauges { grid-template-columns: repeat(2,1fr); }
@@ -888,7 +889,8 @@
   .svg-tools-picker-trigger[aria-expanded="true"] > svg { transform: none; }
   .svg-tools-picker-menu,
   .svg-tools-picker-menu[data-open="true"] { transform: none; }
-  .svg-assistant-trigger { transition: none; }
+  .svg-assistant-orb-ui, .svg-assistant-hint { transition: none; animation: none; transform: none; }
+  .svg-assistant-orb-ui::after { animation: none !important; }
   .svg-assistant-bubble { animation: none; transform: none; }
   .svg-assistant[data-speaking="true"] .svg-assistant-orb,
   .svg-assistant[data-speaking="true"] .svg-assistant-orb i { animation: none; }

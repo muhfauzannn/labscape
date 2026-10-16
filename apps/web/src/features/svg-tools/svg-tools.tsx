@@ -191,9 +191,8 @@ export function SvgTools() {
           {controlsOpen ? <X aria-hidden="true" size={17} /> : <SlidersHorizontal aria-hidden="true" size={17} />}
           <span>{controlsOpen ? "Close controls" : "Controls"}</span>
         </button>
-        <span className="svg-tools-dock-rule" aria-hidden="true" />
-        <LiveAssistant toolId={selected} toolLabel={title} toolRoot={figureRootRef} />
       </div>
+      <LiveAssistant toolId={selected} toolLabel={title} toolRoot={figureRootRef} />
     </div>
   );
 }
