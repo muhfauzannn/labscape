@@ -140,37 +140,47 @@ export function EngineLive({artwork,turn,mesh,model}:{artwork:React.ReactNode;tu
     <div className="engine-gauges"><Gauge id="pressure" label={`Cylinder ${cylinder+1} pressure`} unit="bar" max={110}/><Gauge id="temperature" label={`Cylinder ${cylinder+1} temperature`} unit="°C" max={3200}/><Gauge id="torque" label="Turning force" unit="N·m" min={-20} max={120}/><Gauge id="rpm" label="Engine speed" unit="rpm" max={6500}/></div>
     <div className="engine-main">
       <div className="engine-visual-panel">
-        <div className="engine-view-top"><span>Inside the engine <i/> <output data-value="renderer">3D view</output></span><div><Button variant="secondary" onClick={()=>{setCylinder(0);commands.current?.cylinder(0);}} aria-pressed={cylinder===0}>Cylinder 1</Button><Button variant="secondary" onClick={()=>{setCylinder(1);commands.current?.cylinder(1);}} aria-pressed={cylinder===1}>Cylinder 2</Button></div></div>
+        <div className="engine-view-top"><span>Inside the engine <i/> <output data-value="renderer">3D view</output></span></div>
         <div ref={stage} className="engine-stage iso-turn" tabIndex={0} role="group" aria-label="Interactive engine. Drag to turn the view. Left and right arrows move the parts, Space pauses, and R resets the view.">
           <div className="engine-scene">{artwork}<canvas className="engine-gl" aria-hidden="true"/><svg className="engine-gas iso-layer" viewBox="0 0 1000 740" aria-hidden="true"><defs>{[0,1].map(i=><clipPath id={`engine-gas-${i}`} key={i}><path data-gas-clip={i}/></clipPath>)}</defs>{[0,1].map(i=><g key={i}><path data-gas={i}/><path data-spray={i} clipPath={`url(#engine-gas-${i})`} fill="#e2b467"/><g data-spark={i} opacity="0"><path d="M0 -6L1.5 -1.5L6 0L1.5 1.5L0 6L-1.5 1.5L-6 0L-1.5 -1.5Z" fill="#ffd28a"/><circle r="1.4" fill="#fffbea"/></g></g>)}</svg></div>
           <div className="engine-view-corner"><b>Drag to turn</b><span>Look inside the engine</span></div>
           <div className="engine-view-tools"><Button variant="secondary" onClick={()=>commands.current?.zoom(.1)} aria-label="Zoom in">+</Button><Button variant="secondary" onClick={()=>commands.current?.zoom(-.1)} aria-label="Zoom out">−</Button><Button variant="secondary" onClick={()=>commands.current?.tilt(6)} aria-label="Tilt view up">⌃</Button><Button variant="secondary" onClick={()=>commands.current?.tilt(-6)} aria-label="Tilt view down">⌄</Button><Button variant="secondary" onClick={()=>commands.current?.resetView()} aria-label="Reset 3D view">↺</Button></div>
         </div>
-        <div className="engine-components">{COMPONENTS.map(p=><Button variant="secondary" key={p.id} aria-pressed={highlight===p.id} onClick={()=>setHighlight(highlight===p.id?"":p.id)}>{p.label}</Button>)}</div>
         <div className="engine-cylinder-strip"><span><i className="cylinder-one"/> 1 <b data-value="cylinder-phase-0">Air in</b></span><span><i className="cylinder-two"/> 2 <b data-value="cylinder-phase-1">Gas out</b></span><span>Top shaft <b data-value="cam-angle">0.0°</b></span></div>
       </div>
-      <aside className="engine-controls" aria-label="Physical engine controls">
-        <div className="engine-panel-title">Engine controls</div>
-        <div className="engine-power-row"><Button variant="primary" className="engine-power" onClick={()=>commands.current?.power()}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v7M5.5 4.8a6.6 6.6 0 1 0 9 0"/></svg>{ui.stall?"Restart engine":ui.running?"Stop engine":"Start engine"}</Button><Button variant="secondary" className="engine-pause" onClick={()=>commands.current?.pause()} aria-label={ui.paused?"Resume simulation":"Pause simulation"}>{ui.paused?"▷":"Ⅱ"}</Button></div>
-        <div className="engine-control-note">Stop the engine or pause the animation.</div>
-        {slider("throttle","Maximum power",0,100,1,"%")}
-        <div className="engine-opening">Current power <output data-value="opening">12%</output></div>
-        {slider("targetRPM","Target speed",600,6000,50," rpm")}
-        <label className="engine-toggle"><span>Keep speed steady</span><input type="checkbox" checked={controls.governor} onChange={e=>update("governor",e.target.checked)}/><i/></label>
-        {slider("load","Resistance",0,80,1," N·m")}
-        <div className="engine-control-divider"/>
-        <div className="engine-switch-row"><Button variant="secondary" aria-pressed={controls.ignition} onClick={()=>update("ignition",!controls.ignition)}><i/> Spark <b>{controls.ignition?"On":"Off"}</b></Button><Button variant="secondary" aria-pressed={controls.injection} onClick={()=>update("injection",!controls.injection)}><i/> Fuel <b>{controls.injection?"On":"Off"}</b></Button></div>
-        {slider("advance","Spark timing",0,40,1,"°")}
-        <div className="engine-control-divider"/>
-        {slider("slow","Animation speed",.005,.1,.005,"")}
-        <div className="engine-control-note">This changes how quickly the parts move on screen.</div>
+      <aside className="engine-controls" aria-label="Engine controls">
+        <div className="engine-controls-heading">Engine</div>
+        <div className="engine-power-row"><Button variant="primary" className="engine-power" onClick={()=>commands.current?.power()}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v7M5.5 4.8a6.6 6.6 0 1 0 9 0"/></svg>{ui.stall?"Restart engine":ui.running?"Stop engine":"Start engine"}</Button><Button variant="secondary" className="engine-pause" onClick={()=>commands.current?.pause()} aria-label={ui.paused?"Resume animation":"Pause animation"}>{ui.paused?"▷":"Ⅱ"}</Button></div>
+        <section className="engine-cylinder-controls" aria-label="Choose a cylinder">
+          <span className="engine-control-section-title">Cylinder</span>
+          <div>{[0,1].map(index=><Button key={index} variant="secondary" aria-pressed={cylinder===index} onClick={()=>{setCylinder(index);commands.current?.cylinder(index);}}>Cylinder {index+1}</Button>)}</div>
+        </section>
+        <section className="engine-primary-controls" aria-label="Main engine settings">
+          {slider("throttle","Maximum power",0,100,1,"%")}
+          <div className="engine-opening"><span>Current power</span><output data-value="opening">12%</output></div>
+          <div className="engine-switch-row"><Button variant="secondary" aria-pressed={controls.ignition} onClick={()=>update("ignition",!controls.ignition)}><i/> Spark <b>{controls.ignition?"On":"Off"}</b></Button><Button variant="secondary" aria-pressed={controls.injection} onClick={()=>update("injection",!controls.injection)}><i/> Fuel <b>{controls.injection?"On":"Off"}</b></Button></div>
+        </section>
+        <details className="engine-component-controls">
+          <summary>Highlight a part</summary>
+          <div className="engine-components">{COMPONENTS.map(p=><Button variant="secondary" key={p.id} aria-pressed={highlight===p.id} onClick={()=>setHighlight(highlight===p.id?"":p.id)}>{p.label}</Button>)}</div>
+        </details>
+        <details className="engine-advanced">
+          <summary>More settings</summary>
+          <div className="engine-advanced-content">
+            {slider("targetRPM","Target speed",600,6000,50," rpm")}
+            <label className="engine-toggle"><span>Keep speed steady</span><input type="checkbox" checked={controls.governor} onChange={e=>update("governor",e.target.checked)}/><i/></label>
+            {slider("load","Resistance",0,80,1," N·m")}
+            {slider("advance","Spark timing",0,40,1,"°")}
+            {slider("slow","Animation speed",.005,.1,.005,"")}
+          </div>
+        </details>
       </aside>
     </div>
-    <div className="engine-cycle-panel"><div className="engine-cycle-title"><span>How the engine works</span><output data-value="angle">0% through cycle</output></div><div className="engine-strokes">{STROKES.map((stroke,i)=><Button variant="secondary" key={stroke} data-stroke={i} aria-pressed={i===0} onClick={()=>commands.current?.seek(i*180+90)}><span>0{i+1}</span><strong>{STROKE_LABELS[i]}</strong></Button>)}</div><div className="engine-stepbar"><span>Move through the cycle</span><div><Button variant="secondary" onClick={()=>commands.current?.step(-5)}>← Previous</Button><Button variant="secondary" onClick={()=>commands.current?.step(5)}>Next →</Button><Button variant="secondary" onClick={()=>commands.current?.seek(360-controls.advance)}>See spark ↗</Button></div><span data-value="phase">Air in</span></div></div>
-    <div className="engine-analysis"><section className="engine-pv"><div className="engine-panel-title">Pressure as the piston moves <span>Cylinder {cylinder+1}</span></div><div className="engine-graph-options"><label><input type="checkbox" checked={reference} onChange={e=>{setReference(e.target.checked);commands.current?.reference(e.target.checked);}}/> Show engine without fuel</label><label><input type="checkbox" checked={log} onChange={e=>{setLog(e.target.checked);commands.current?.log(e.target.checked);}}/> Show more detail</label></div>
+    <div className="engine-cycle-panel"><div className="engine-cycle-title"><div><span>Engine cycle</span><small>Choose a step to inspect</small></div><output data-value="angle">0% through cycle</output></div><div className="engine-strokes">{STROKES.map((stroke,i)=><Button variant="secondary" key={stroke} data-stroke={i} aria-pressed={i===0} onClick={()=>commands.current?.seek(i*180+90)}><span>0{i+1}</span><strong>{STROKE_LABELS[i]}</strong></Button>)}</div><div className="engine-stepbar"><span data-value="phase">Air in</span><div><Button variant="secondary" onClick={()=>commands.current?.step(-5)}>← Previous</Button><Button variant="secondary" onClick={()=>commands.current?.step(5)}>Next →</Button><Button variant="secondary" onClick={()=>commands.current?.seek(360-controls.advance)}>See spark ↗</Button></div></div></div>
+    <details className="engine-analysis"><summary>Explore engine readings</summary><div className="engine-analysis-grid"><section className="engine-pv"><div className="engine-panel-title">Pressure as the piston moves <span>Cylinder {cylinder+1}</span></div><div className="engine-graph-options"><label><input type="checkbox" checked={reference} onChange={e=>{setReference(e.target.checked);commands.current?.reference(e.target.checked);}}/> Show engine without fuel</label><label><input type="checkbox" checked={log} onChange={e=>{setLog(e.target.checked);commands.current?.log(e.target.checked);}}/> Show more detail</label></div>
       <svg ref={graph} className="engine-graph" viewBox="0 0 650 275" role="img" aria-label="Interactive pressure volume graph. Drag the curve to pause and inspect a crank angle."><g className="pv-grid">{[0,1,2,3].map(i=><line key={i} data-y-grid={i} x1="55" x2="610" y1={230-i*66} y2={230-i*66}/>)}{[50,150,250,350,450,500].map(v=><line key={v} x1={55+(v-40)/500*555} x2={55+(v-40)/500*555} y1="22" y2="230"/>)}</g><g className="pv-ticks">{[0,1,2,3].map(i=><text key={i} data-y-tick={i} x="44" y={233-i*66} textAnchor="end">{i*35}</text>)}{[50,150,250,350,450,500].map(v=><text key={v} x={55+(v-40)/500*555} y="246" textAnchor="middle">{v}</text>)}<text x="330" y="270" textAnchor="middle">VOLUME (cm³)</text><text transform="translate(15 128) rotate(-90)" textAnchor="middle">PRESSURE (bar)</text></g><path data-reference="" className="pv-reference"/>{[0,1,2,3].map(i=><path key={i} data-cycle-path={i} className={`pv-cycle pv-phase-${i}`}/>)}<line data-cursor-v="" className="pv-cursor" y1="22" y2="230"/><line data-cursor-h="" className="pv-cursor" x1="55" x2="610"/><circle data-live-halo="" r="7" className="pv-dot-halo"/><circle data-live-dot="" r="3" className="pv-dot"/></svg>
       <div className="engine-graph-bottom"><span>Drag the line to explore</span><output data-value="graph-point">—</output></div></section>
-      <section className="engine-event-panel"><div className="engine-panel-title">Inside the cylinder</div><dl><div><dt>Air valve opening</dt><dd data-value="intake">0.00 mm</dd></div><div><dt>Exhaust valve opening</dt><dd data-value="exhaust">0.00 mm</dd></div><div><dt>Spark</dt><dd data-value="spark">Ready</dd></div><div><dt>Fuel</dt><dd data-value="injection">Off</dd></div><div><dt>Energy from one cycle</dt><dd data-value="work">—</dd></div><div><dt>Fuel used in one cycle</dt><dd data-value="fuel">—</dd></div></dl><p>These readings change as the parts move.</p></section></div>
+      <section className="engine-event-panel"><div className="engine-panel-title">Inside the cylinder</div><dl><div><dt>Air valve opening</dt><dd data-value="intake">0.00 mm</dd></div><div><dt>Exhaust valve opening</dt><dd data-value="exhaust">0.00 mm</dd></div><div><dt>Spark</dt><dd data-value="spark">Ready</dd></div><div><dt>Fuel</dt><dd data-value="injection">Off</dd></div><div><dt>Energy from one cycle</dt><dd data-value="work">—</dd></div><div><dt>Fuel used in one cycle</dt><dd data-value="fuel">—</dd></div></dl></section></div></details>
     <span className="engine-sr" data-value="announcement" aria-live="polite"/>
   </figure>;
 }

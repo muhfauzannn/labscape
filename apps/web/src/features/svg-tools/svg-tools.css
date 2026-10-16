@@ -345,7 +345,7 @@
 .svg-tools .engine-gauge-body { justify-content: center; margin: 0; }
 .svg-tools .engine-gauge-body > div { margin: 0; }
 .svg-tools .engine-gauge output { font-size: 20px; }
-.svg-tools .engine-view-top { height: 38px; }
+.svg-tools .engine-view-top { display: none; }
 .svg-tools .engine-view-top > span,
 .svg-tools .engine-view-corner,
 .svg-tools .engine-cylinder-strip,
@@ -353,22 +353,156 @@
 .svg-tools .engine-panel-title > span,
 .svg-tools .engine-model-tag { display: none; }
 .svg-tools .engine-view-tools { right: 14px; bottom: 14px; border-radius: 10px; }
-.svg-tools .engine-components { justify-content: center; padding: 8px; }
+.svg-tools .engine-components { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; padding: 0; }
 .svg-tools-figure[data-controls-open="true"] .engine-controls {
   position: fixed;
   z-index: 50;
   top: 100px;
   right: 24px;
-  bottom: 98px;
+  bottom: auto;
   width: 320px;
+  max-height: calc(100dvh - 198px);
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--surface);
   box-shadow: var(--shadow-float);
 }
+.svg-tools .engine-controls {
+  display: block;
+  padding: 20px;
+  color: var(--ink);
+}
+.svg-tools .engine-controls-heading {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+  line-height: 1.35;
+}
+.svg-tools .engine-power-row { gap: 8px; margin: 16px 0 0; }
+.svg-tools .engine-power,
+.svg-tools .engine-pause { height: 42px; border-radius: 10px; }
+.svg-tools .engine-power { font-size: 12px; font-weight: var(--weight-medium); }
+.svg-tools .engine-power svg { width: 15px; height: 15px; }
+.svg-tools .engine-pause { width: 42px; font-size: 16px; }
+.svg-tools .engine-control-section-title { display: block; color: var(--ink-secondary); font-size: 11px; font-weight: var(--weight-medium); line-height: 1.4; }
+.svg-tools .engine-cylinder-controls { margin-top: 16px; }
+.svg-tools .engine-cylinder-controls > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; margin-top: 7px; }
+.svg-tools .engine-cylinder-controls button {
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-subtle);
+  color: var(--ink-secondary);
+  font-family: var(--font-sans), Arial, sans-serif;
+  font-size: 11px;
+}
+.svg-tools .engine-cylinder-controls button[aria-pressed="true"] { border-color: var(--sky-ink); background: var(--sky-soft); color: var(--sky-ink); }
+.svg-tools .engine-primary-controls { padding: 0 0 16px; }
+.svg-tools .engine-slider { margin-top: 20px; }
+.svg-tools .engine-slider > span { align-items: center; font-size: 12px; }
+.svg-tools .engine-slider output { font-size: 12px; font-weight: var(--weight-medium); }
+.svg-tools .engine-slider input { height: 4px; margin: 13px 0 2px; border-radius: 99px; }
+.svg-tools .engine-slider input::-webkit-slider-thumb { width: 14px; height: 14px; border-radius: 50%; }
+.svg-tools .engine-slider input::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; }
+.svg-tools .engine-opening { margin-top: 8px; font-size: 11px; color: var(--ink-secondary); }
+.svg-tools .engine-opening output { color: var(--ink); font-size: 11px; font-weight: var(--weight-medium); }
+.svg-tools .engine-switch-row { gap: 8px; margin-top: 17px; }
+.svg-tools .engine-switch-row button {
+  min-height: 42px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  color: var(--ink-secondary);
+  font-size: 12px;
+}
+.svg-tools .engine-switch-row button i { width: 7px; height: 7px; border-radius: 50%; }
+.svg-tools .engine-switch-row button b { font: inherit; font-size: 11px; color: var(--ink-muted); }
+.svg-tools .engine-switch-row button[aria-pressed="true"] b { color: var(--sky-ink); }
+.svg-tools .engine-component-controls { margin-top: 1px; padding-top: 14px; border-top: 1px solid var(--border); }
+.svg-tools .engine-component-controls > summary { color: var(--ink-secondary); font-size: 11px; font-weight: var(--weight-medium); }
+.svg-tools .engine-component-controls .engine-components { margin-top: 8px; }
+.svg-tools .engine-components button {
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-subtle);
+  color: var(--ink-secondary);
+  font-family: var(--font-sans), Arial, sans-serif;
+  font-size: 11px;
+  text-align: center;
+}
+.svg-tools .engine-components button[aria-pressed="true"] { border-color: var(--sky-ink); background: var(--sky-soft); color: var(--sky-ink); }
+.svg-tools .engine-advanced { padding-top: 14px; border-top: 1px solid var(--border); }
+.svg-tools .engine-advanced > summary,
+.svg-tools .engine-analysis > summary,
+.svg-tools .engine-component-controls > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink);
+  font-family: var(--font-sans), Arial, sans-serif;
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  line-height: 1.4;
+  list-style: none;
+  cursor: pointer;
+}
+.svg-tools .engine-advanced > summary::-webkit-details-marker,
+.svg-tools .engine-analysis > summary::-webkit-details-marker,
+.svg-tools .engine-component-controls > summary::-webkit-details-marker { display: none; }
+.svg-tools .engine-advanced > summary::after,
+.svg-tools .engine-analysis > summary::after,
+.svg-tools .engine-component-controls > summary::after {
+  content: "+";
+  color: var(--ink-muted);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1;
+}
+.svg-tools .engine-advanced[open] > summary::after,
+.svg-tools .engine-analysis[open] > summary::after,
+.svg-tools .engine-component-controls[open] > summary::after { content: "−"; }
+.svg-tools .engine-advanced > summary:focus-visible,
+.svg-tools .engine-analysis > summary:focus-visible,
+.svg-tools .engine-component-controls > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: 3px; }
+.svg-tools .engine-advanced-content { padding-top: 2px; }
+.svg-tools .engine-advanced-content .engine-slider { margin-top: 17px; }
+.svg-tools .engine-toggle {
+  min-height: 42px;
+  margin-top: 5px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-secondary);
+  font-size: 12px;
+}
+.svg-tools .engine-toggle i { width: 30px; height: 17px; border-color: var(--border-strong, var(--border)); }
+.svg-tools .engine-toggle i:after { top: 3px; width: 9px; height: 9px; }
+.svg-tools .engine-toggle input:checked + i:after { transform: translateX(12px); }
 .svg-tools .engine-cycle-panel,
 .svg-tools .engine-analysis { max-width: 1000px; margin: 24px auto 0; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.svg-tools .engine-cycle-panel { padding: 20px; background: var(--surface); }
+.svg-tools .engine-cycle-title { align-items: center; color: var(--ink); font-size: 12px; font-weight: var(--weight-medium); }
+.svg-tools .engine-cycle-title > div { display: flex; flex-direction: column; gap: 3px; }
+.svg-tools .engine-cycle-title small { color: var(--ink-secondary); font-size: 11px; font-weight: 400; letter-spacing: 0; }
+.svg-tools .engine-cycle-title output { padding: 5px 8px; border-radius: 999px; background: var(--surface-subtle); color: var(--ink-secondary); font-size: 11px; }
+.svg-tools .engine-strokes { gap: 8px; margin-top: 16px; }
+.svg-tools .engine-strokes button { min-height: 54px; gap: 10px; padding: 12px; border-radius: 10px; background: var(--surface-subtle); }
+.svg-tools .engine-strokes button span { font-size: 10px; }
+.svg-tools .engine-strokes button strong { color: var(--ink); font-size: 12px; font-weight: var(--weight-medium); }
+.svg-tools .engine-strokes button[aria-pressed="true"] { border-color: var(--sky-ink); background: var(--sky-soft); }
+.svg-tools .engine-strokes button[aria-pressed="true"]:after { right: 10px; left: 10px; border-radius: 99px; background: var(--sky-ink); }
+.svg-tools .engine-stepbar { margin-top: 14px; }
+.svg-tools .engine-stepbar > span { color: var(--ink); font-size: 12px; font-weight: var(--weight-medium); }
+.svg-tools .engine-stepbar > div { gap: 7px; }
+.svg-tools .engine-stepbar button { min-height: 36px; padding: 7px 11px; border: 1px solid var(--border); border-radius: 9px; color: var(--ink-secondary); font-family: var(--font-sans), Arial, sans-serif; font-size: 11px; }
+.svg-tools .engine-stepbar button:hover { background: var(--surface-subtle); color: var(--ink); }
+.svg-tools .engine-analysis { display: block; background: var(--surface); }
+.svg-tools .engine-analysis > summary { min-height: 48px; padding: 0 18px; }
+.svg-tools .engine-analysis-grid { display: grid; grid-template-columns: minmax(0,1.6fr) 1fr; border-top: 1px solid var(--border); }
+.svg-tools .engine-analysis-grid .engine-event-panel { border-left-color: var(--border); }
 
 .svg-tools .microscope-lab .ml-toolbar {
   position: relative;
@@ -521,6 +655,12 @@
   .svg-tools .rocket-telemetry { grid-template-columns: repeat(2,1fr); gap: 14px; }
   .svg-tools .engine-gauges { grid-template-columns: repeat(2,1fr); }
   .svg-tools .engine-gauge-title { font-size: 7px; }
+  .svg-tools .engine-cycle-panel { padding: 16px; }
+  .svg-tools .engine-strokes { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .svg-tools .engine-stepbar { align-items: flex-start; flex-direction: column; }
+  .svg-tools .engine-stepbar > div { width: 100%; flex-wrap: wrap; }
+  .svg-tools .engine-analysis-grid { grid-template-columns: 1fr; }
+  .svg-tools .engine-analysis-grid .engine-event-panel { border-left: 0; border-top: 1px solid var(--border); }
   .svg-tools .ml-lab-grid { grid-template-columns: 1fr; }
   .svg-tools-figure[data-controls-open="true"] .rocket-panel,
   .svg-tools-figure[data-controls-open="true"] .engine-controls,
