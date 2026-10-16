@@ -23,33 +23,11 @@
   margin-bottom: 24px;
 }
 
-.svg-tools-kicker {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--ink-muted);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  letter-spacing: var(--tracking-label);
-}
-
 .svg-tools-heading h1 {
   font-size: var(--text-3xl);
   font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-heading);
   line-height: var(--leading-heading);
-}
-
-.svg-tools-heading p {
-  margin-top: 8px;
-  color: var(--ink-secondary);
-  font-size: var(--text-sm);
-}
-
-.svg-tools-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 24px;
 }
 
 .svg-tools-workspace {
@@ -58,26 +36,6 @@
   background: var(--surface);
   box-shadow: var(--shadow-card);
   overflow: hidden;
-}
-
-.svg-tools-workspace-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border);
-}
-
-.svg-tools-workspace-heading h2 {
-  font-size: var(--text-xl);
-  font-weight: var(--weight-semibold);
-  letter-spacing: -0.025em;
-}
-
-.svg-tools-workspace-heading span {
-  color: var(--ink-muted);
-  font-size: var(--text-xs);
 }
 
 .svg-tools-figure {
@@ -134,7 +92,7 @@
   background: var(--surface) !important;
   color: var(--ink) !important;
   font-family: var(--font-sans), Arial, sans-serif !important;
-  font-size: var(--text-xs) !important;
+  font-size: var(--text-sm) !important;
   font-weight: var(--weight-medium) !important;
   letter-spacing: 0 !important;
   cursor: pointer;
@@ -146,8 +104,8 @@
 }
 
 .svg-tools .iso button:not(.ml-hotspot)[aria-pressed="true"] {
-  background: var(--mint-soft) !important;
-  color: var(--mint-ink) !important;
+  background: var(--sky-soft) !important;
+  color: var(--sky-ink) !important;
 }
 
 .svg-tools .iso button.rocket-launch,
@@ -203,10 +161,389 @@
   background: var(--surface);
 }
 
-@media (max-width: 640px) {
-  .svg-tools { padding: 28px 12px 56px; }
-  .svg-tools-heading h1 { font-size: var(--text-2xl); }
-  .svg-tools-figure { padding: 10px; }
-  .svg-tools-workspace-heading { padding: 16px; }
-  .svg-tools-workspace-heading span { display: none; }
+/* The illustration is the workspace. Controls are available from one dock. */
+.svg-tools {
+  min-height: calc(100dvh - 80px);
+  padding: 24px 24px 120px;
+  background: linear-gradient(180deg, var(--sky-soft) 0, var(--canvas) 54%);
+}
+
+.svg-tools-shell { max-width: 1320px; }
+.svg-tools-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+.svg-tools-heading h1 { color: var(--ink); font-size: var(--text-xl); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-heading); }
+.svg-tools-heading > span { color: var(--sky-ink); font-size: var(--text-sm); font-weight: var(--weight-medium); }
+.svg-tools-workspace { border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: visible; }
+.svg-tools-figure { position: relative; min-width: 0; padding: 0; }
+
+.svg-tools-dock {
+  position: fixed;
+  z-index: 60;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 7px;
+  transform: translateX(-50%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  box-shadow: var(--shadow-float);
+  backdrop-filter: blur(16px);
+}
+.svg-tools-picker { display: flex; align-items: center; gap: 10px; padding-left: 13px; }
+.svg-tools-picker-label { color: var(--ink-muted); font-size: var(--text-xs); }
+.svg-tools-picker-wrap { position: relative; display: flex; align-items: center; }
+.svg-tools-picker select {
+  appearance: none;
+  min-width: 136px;
+  padding: 11px 28px 11px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: var(--weight-semibold) var(--text-sm) var(--font-sans), Arial, sans-serif;
+  cursor: pointer;
+}
+.svg-tools-picker-wrap svg { position: absolute; right: 6px; pointer-events: none; color: var(--ink-muted); }
+.svg-tools-dock-rule { width: 1px; height: 26px; background: var(--border); }
+.svg-tools-controls-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: var(--control-height);
+  padding: 0 15px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--on-primary);
+  font: var(--weight-semibold) var(--text-sm) var(--font-sans), Arial, sans-serif;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease);
+}
+.svg-tools-controls-toggle:active,
+.svg-tools .ms-flow-toggle:active,
+.svg-tools .rocket-launch:active,
+.svg-tools .engine-power:active,
+.svg-tools .terminal-controls button:active { transform: scale(.97); }
+.svg-tools .ms-flow-toggle,
+.svg-tools .rocket-launch,
+.svg-tools .engine-power,
+.svg-tools .terminal-controls button { transition: transform var(--duration-fast) var(--ease); }
+@media (hover: hover) and (pointer: fine) {
+  .svg-tools-controls-toggle:hover { background: var(--primary-hover); }
+}
+.svg-tools-controls-toggle:focus-visible, .svg-tools-picker select:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+
+.svg-tools .microscope-figure .iso-figure { margin: 0; }
+.svg-tools .microscope-figure { width: min(100%, calc((100dvh - 210px) * 1.525)); margin: 0 auto; }
+.svg-tools .microscope-figure .iso-plate { padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.svg-tools .microscope-figure .iso-plate-corners { display: none; }
+.svg-tools-figure[data-controls-open="true"] .ms-figure-tools,
+.svg-tools-figure[data-controls-open="true"] .terminal-caption {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  bottom: 96px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  margin: 0;
+  padding: 8px;
+  transform: translateX(-50%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.svg-tools-figure:not([data-controls-open="true"]) .ms-figure-tools,
+.svg-tools-figure:not([data-controls-open="true"]) .terminal-caption,
+.svg-tools-figure:not([data-controls-open="true"]) .rocket-panel,
+.svg-tools-figure:not([data-controls-open="true"]) .engine-controls,
+.svg-tools-figure:not([data-controls-open="true"]) .engine-cycle-panel,
+.svg-tools-figure:not([data-controls-open="true"]) .engine-analysis,
+.svg-tools-figure:not([data-controls-open="true"]) .ml-inspector,
+.svg-tools-figure:not([data-controls-open="true"]) .ml-lab-grid,
+.svg-tools-figure:not([data-controls-open="true"]) .ml-learning { display: none !important; }
+
+.svg-tools .terminal-card,
+.svg-tools .rocket-card,
+.svg-tools .engine-lab,
+.svg-tools .microscope-lab { border: 0; border-radius: 0; box-shadow: none; background: transparent; overflow: visible; }
+.svg-tools .terminal-card { padding: 0; }
+.svg-tools .terminal-art { width: min(100%, calc((100dvh - 260px) * 1.4)); max-width: none; margin: 0 auto; }
+.svg-tools .terminal-card-top,
+.svg-tools .rocket-card-top { display: flex; justify-content: flex-end; position: relative; z-index: 1; padding: 0 0 8px; border: 0; }
+.svg-tools .terminal-card-top > span,
+.svg-tools .rocket-card-top > span { display: none; }
+.svg-tools .terminal-card-top button,
+.svg-tools .rocket-card-top button { padding: 8px 11px; border: 1px solid var(--border) !important; border-radius: 10px; font-size: 10px; }
+.svg-tools .terminal-card-bottom { justify-content: flex-end; padding: 8px 4px; }
+.svg-tools .terminal-card-bottom output,
+.svg-tools .rocket-card-bottom output,
+.svg-tools .ms-live-indicator,
+.svg-tools .engine-topbar output {
+  color: var(--ink-secondary);
+  font-family: var(--font-sans), Arial, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+.svg-tools .terminal-card-bottom > span { display: none; }
+.svg-tools .terminal-caption { justify-content: center; margin-top: 12px; }
+.svg-tools .terminal-controls { justify-content: center; gap: 8px; }
+.svg-tools .terminal-controls button,
+.svg-tools .ms-flow-toggle { min-height: 40px; padding: 8px 13px !important; }
+
+.svg-tools .rocket-workbench { display: block; min-height: 0; }
+.svg-tools .rocket-stage { min-height: 0; }
+.svg-tools .rocket-art { max-width: min(100%, calc((100dvh - 280px) * 1.08)); margin: auto; }
+.svg-tools .rocket-scene-note,
+.svg-tools .rocket-direction,
+.svg-tools .rocket-stage-corner br,
+.svg-tools .rocket-stage-corner { display: none; }
+.svg-tools .rocket-card-bottom { justify-content: center; border: 0; padding: 10px; }
+.svg-tools .rocket-card-bottom > span { display: none; }
+.svg-tools .rocket-telemetry { max-width: 680px; margin: 0 auto; padding: 14px 0; border: 0; }
+.svg-tools .rocket-telemetry > div { padding-left: 14px; }
+.svg-tools-figure[data-controls-open="true"] .rocket-panel {
+  position: fixed;
+  z-index: 50;
+  top: 100px;
+  right: 24px;
+  bottom: 98px;
+  display: flex;
+  width: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.svg-tools .rocket-panel-heading,
+.svg-tools .rocket-part-description,
+.svg-tools .rocket-range-notes { display: none; }
+.svg-tools .rocket-part-list { margin: 0 0 16px; }
+.svg-tools .rocket-force { margin: 18px 0; }
+
+.svg-tools .engine-main { display: block; }
+.svg-tools .engine-visual-panel { max-width: min(100%, calc((100dvh - 360px) * 1.35)); margin: 0 auto; }
+.svg-tools .engine-topbar { padding: 0 8px; height: 42px; border: 0; }
+.svg-tools .engine-topbar > span { display: none; }
+.svg-tools .engine-topbar > div { margin-left: auto; }
+.svg-tools .engine-gauges { max-width: 620px; margin: 0 auto; background: transparent; border: 0; }
+.svg-tools .engine-gauge { padding: 9px; border: 0; text-align: center; }
+.svg-tools .engine-gauge-title { justify-content: center; font-size: 8px; }
+.svg-tools .engine-gauge-title > span,
+.svg-tools .engine-gauge-body > svg { display: none; }
+.svg-tools .engine-gauge-body { justify-content: center; margin: 0; }
+.svg-tools .engine-gauge-body > div { margin: 0; }
+.svg-tools .engine-gauge output { font-size: 20px; }
+.svg-tools .engine-view-top { height: 38px; }
+.svg-tools .engine-view-top > span,
+.svg-tools .engine-view-corner,
+.svg-tools .engine-cylinder-strip,
+.svg-tools .engine-control-note,
+.svg-tools .engine-panel-title > span,
+.svg-tools .engine-model-tag { display: none; }
+.svg-tools .engine-view-tools { right: 14px; bottom: 14px; border-radius: 10px; }
+.svg-tools .engine-components { justify-content: center; padding: 8px; }
+.svg-tools-figure[data-controls-open="true"] .engine-controls {
+  position: fixed;
+  z-index: 50;
+  top: 100px;
+  right: 24px;
+  bottom: 98px;
+  width: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.svg-tools .engine-cycle-panel,
+.svg-tools .engine-analysis { max-width: 1000px; margin: 24px auto 0; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+
+.svg-tools .microscope-lab .ml-toolbar {
+  position: relative;
+  z-index: 3;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0 12px;
+  border: 0;
+  background: transparent;
+}
+.svg-tools-figure:not([data-controls-open="true"]) .ml-toolbar { display: none; }
+.svg-tools-figure[data-controls-open="true"] .ml-toolbar {
+  position: fixed;
+  z-index: 50;
+  top: 100px;
+  left: 24px;
+  width: max-content;
+  max-width: calc(100vw - 370px);
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.svg-tools .ml-main { display: block; }
+.svg-tools .ml-instrument { max-width: min(100%, calc((100dvh - 225px) * 1.143)); margin: auto; border: 0; background: transparent; }
+.svg-tools .ml-corner,
+.svg-tools .ml-view-note,
+.svg-tools .ml-instrument-foot,
+.svg-tools .ml-mechanism-head,
+.svg-tools .ml-learning-copy,
+.svg-tools .ml-control-help,
+.svg-tools .ml-optics-panel h3,
+.svg-tools .ml-focus-visual svg,
+.svg-tools .ml-parts-list,
+.svg-tools .ml-connections { display: none; }
+.svg-tools-figure[data-controls-open="true"] .ml-inspector {
+  position: fixed;
+  z-index: 50;
+  top: 100px;
+  right: 24px;
+  width: 320px;
+  max-height: calc(100dvh - 198px);
+  overflow-y: auto;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.svg-tools .ml-inspector h2 { margin: 12px 0; }
+.svg-tools .ml-inspector h3 { margin: 14px 0 6px; }
+.svg-tools .ml-lab-grid { max-width: 1000px; margin: 24px auto 0; grid-template-columns: repeat(3,minmax(0,1fr)); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.svg-tools .ml-learning { max-width: 1000px; margin: 16px auto 0; display: block; border: 1px solid var(--border); border-radius: 14px; }
+.svg-tools .ml-learning-nav { display: flex; flex-wrap: wrap; gap: 8px; border: 0; }
+.svg-tools .ml-learning-nav button { width: auto; padding: 8px 10px; }
+
+/* Keep the instrument artwork intact while bringing its HTML controls into Labai's palette. */
+.svg-tools .rocket-panel {
+  --rk-accent: var(--sky-ink);
+  --rk-muted: var(--ink-secondary);
+  --rk-panel: var(--surface);
+}
+.svg-tools .engine-controls,
+.svg-tools .engine-cycle-panel,
+.svg-tools .engine-analysis {
+  --en-accent: var(--sky-ink);
+  --en-panel: var(--surface);
+  --en-line: var(--border);
+  --en-muted: var(--ink-secondary);
+}
+.svg-tools .ml-toolbar,
+.svg-tools .ml-inspector,
+.svg-tools .ml-lab-grid,
+.svg-tools .ml-learning {
+  --ml-accent: var(--sky-ink);
+  --ml-green: var(--mint-ink);
+  --ml-panel: var(--surface-subtle);
+  --ml-line: var(--border);
+  --ml-muted: var(--ink-secondary);
+}
+.svg-tools .rocket-panel,
+.svg-tools .engine-controls,
+.svg-tools .ml-inspector { color: var(--ink); }
+.svg-tools .rocket-part-list button[aria-pressed="true"],
+.svg-tools .engine-switch-row button[aria-pressed="true"],
+.svg-tools .ml-mode-switch button[aria-pressed="true"] {
+  border-color: var(--sky-ink) !important;
+  background: var(--sky-soft) !important;
+  color: var(--sky-ink) !important;
+}
+.svg-tools .rocket-cutaway,
+.svg-tools .rocket-throttle label,
+.svg-tools .rocket-force div,
+.svg-tools .engine-slider > span,
+.svg-tools .engine-toggle,
+.svg-tools .ml-control-title,
+.svg-tools .ml-control-label,
+.svg-tools .ml-stage-xy > span {
+  color: var(--ink-secondary);
+  font-family: var(--font-sans), Arial, sans-serif;
+  font-size: var(--text-xs);
+  letter-spacing: 0;
+}
+.svg-tools .rocket-throttle label output,
+.svg-tools .engine-slider output,
+.svg-tools .ml-control-title output { color: var(--sky-ink); font-size: var(--text-xs); }
+.svg-tools .engine-opening,
+.svg-tools .engine-cycle-title,
+.svg-tools .engine-stepbar > span,
+.svg-tools .ml-field-caption {
+  font-family: var(--font-sans), Arial, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.svg-tools .rocket-telemetry { color: var(--ink); }
+.svg-tools .rocket-telemetry > div { border-color: var(--border); }
+.svg-tools .rocket-telemetry dt { color: var(--ink-secondary); font-family: var(--font-sans), Arial, sans-serif; font-size: 12px; letter-spacing: 0; }
+.svg-tools .rocket-telemetry small { color: var(--ink-muted); font-size: 10px; }
+.svg-tools .engine-gauge-title { color: var(--ink-secondary); font-family: var(--font-sans), Arial, sans-serif; font-size: 11px; letter-spacing: 0; line-height: 1.3; }
+.svg-tools .engine-gauge output { color: var(--ink); font-family: var(--font-sans), Arial, sans-serif; }
+.svg-tools .engine-gauge small { color: var(--ink-muted); font-size: 10px; }
+.svg-tools .engine-panel-title,
+.svg-tools .ml-panel-kicker { color: var(--ink-secondary); font-family: var(--font-sans), Arial, sans-serif; font-size: 11px; letter-spacing: 0; }
+.svg-tools .ml-inspector h2 { color: var(--ink); font-family: var(--font-sans), Arial, sans-serif; font-weight: var(--weight-semibold); }
+.svg-tools .ml-inspector h3 { color: var(--ink); font-size: var(--text-sm); }
+.svg-tools .ml-inspector > p { color: var(--ink-secondary); font-size: var(--text-sm); line-height: var(--leading-body); }
+.svg-tools .ml-part-fact { color: var(--sky-ink); font-size: 10px; }
+.svg-tools .ml-field-panel { background: var(--surface-subtle); }
+.svg-tools .ml-field-readouts span,
+.svg-tools .ml-control-label span,
+.svg-tools .ml-objectives span,
+.svg-tools .ml-focus-visual span { color: var(--ink-muted); font-family: var(--font-sans), Arial, sans-serif; font-size: 11px; letter-spacing: 0; }
+.svg-tools .ml-focus-visual small { color: var(--sky-ink); font-size: var(--text-xs); }
+.svg-tools .ml-magnification strong { color: var(--sky-ink); }
+.svg-tools .ml-objectives button[aria-pressed="true"] { border-color: var(--sky-ink) !important; background: var(--sky-soft) !important; }
+.svg-tools .ml-focus-panel .ml-fine-buttons button:nth-child(2) { color: var(--sky-ink) !important; background: var(--sky-soft) !important; }
+.svg-tools .iso input[type="range"] { accent-color: var(--sky-ink); }
+
+@media (max-width: 720px) {
+  .svg-tools { padding: 16px 12px 115px; }
+  .svg-tools-heading { margin-bottom: 8px; }
+  .svg-tools-heading h1 { font-size: 16px; }
+  .svg-tools-picker { gap: 5px; padding-left: 8px; }
+  .svg-tools-picker-label { display: none; }
+  .svg-tools-picker select { min-width: 112px; font-size: 12px; }
+  .svg-tools-controls-toggle { padding: 0 12px; font-size: 12px; }
+  .svg-tools .rocket-art { max-width: min(100%, calc((100dvh - 265px) * 1.08)); }
+  .svg-tools .rocket-telemetry { grid-template-columns: repeat(2,1fr); gap: 14px; }
+  .svg-tools .engine-gauges { grid-template-columns: repeat(2,1fr); }
+  .svg-tools .engine-gauge-title { font-size: 7px; }
+  .svg-tools .ml-lab-grid { grid-template-columns: 1fr; }
+  .svg-tools-figure[data-controls-open="true"] .rocket-panel,
+  .svg-tools-figure[data-controls-open="true"] .engine-controls,
+  .svg-tools-figure[data-controls-open="true"] .ml-inspector {
+    top: auto;
+    right: 12px;
+    bottom: 86px;
+    left: 12px;
+    width: auto;
+    max-height: min(58dvh, 520px);
+  }
+  .svg-tools .ml-mode-switch button { padding: 8px !important; font-size: 9px; }
+  .svg-tools .ml-mode-switch button span { display: none; }
+  .svg-tools-figure[data-controls-open="true"] .ml-toolbar {
+    top: 80px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svg-tools-controls-toggle,
+  .svg-tools .iso button { transition: none !important; }
 }

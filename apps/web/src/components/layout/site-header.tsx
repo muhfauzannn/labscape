@@ -2,7 +2,8 @@
 
 import * as NavigationMenu from "@radix-ui/react-navigation-menu";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { gsap } from "gsap";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -188,12 +189,35 @@ function MobileNavigation({ onNavigate }: { onNavigate: () => void }) {
   );
 }
 
-export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
+export function SiteHeader({ overlay = false, closeOnMount = false }: { overlay?: boolean; closeOnMount?: boolean }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [closed, setClosed] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!closeOnMount || !headerRef.current) return;
+    const header = headerRef.current;
+    const spacer = spacerRef.current;
+    const context = gsap.context(() => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        gsap.set(header, { autoAlpha: 0, yPercent: -120 });
+        if (spacer) gsap.set(spacer, { height: 0 });
+        setClosed(true);
+        return;
+      }
+
+      gsap.timeline({ onComplete: () => setClosed(true) })
+        .to(header, { autoAlpha: 0, yPercent: -120, duration: 0.38, ease: "power2.inOut" }, 0)
+        .to(spacer, { height: 0, duration: 0.38, ease: "power2.inOut" }, 0);
+    }, header);
+
+    return () => context.revert();
+  }, [closeOnMount]);
 
   return (
     <>
-      <header className={styles.header}>
+      {!closed && <header ref={headerRef} className={styles.header} aria-hidden={closeOnMount || undefined} inert={closeOnMount || undefined}>
         <div className={styles.bar}>
           <Brand />
           <NavigationMenu.Root
@@ -263,16 +287,16 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
             </button>
           </div>
         </div>
-      </header>
-      {!overlay && <div className={styles.headerSpacer} aria-hidden="true" />}
-      <Dialog
+      </header>}
+      {!closed && !overlay && <div ref={spacerRef} className={styles.headerSpacer} aria-hidden="true" />}
+      {!closed && <Dialog
         open={mobileOpen}
         onOpenChange={setMobileOpen}
         title="Explore Labai"
         description="Jump into a local product preview or inspect the design system."
       >
         <MobileNavigation onNavigate={() => setMobileOpen(false)} />
-      </Dialog>
+      </Dialog>}
     </>
   );
 }

@@ -2,14 +2,14 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 
 const figures = [
-  { id: "microscope", label: "Microscope", hint: "Light path" },
-  { id: "computer", label: "Computer", hint: "Type on the screen" },
-  { id: "rocket", label: "Rocket", hint: "Launch simulation" },
-  { id: "engine", label: "Engine", hint: "Four-stroke cycle" },
-  { id: "microscope-lab", label: "Microscope lab", hint: "Parts and focus" },
+  { id: "microscope", label: "Light path" },
+  { id: "computer", label: "Computer" },
+  { id: "rocket", label: "Rocket" },
+  { id: "engine", label: "Engine" },
+  { id: "microscope-lab", label: "Microscope" },
 ] as const;
 
 type FigureId = (typeof figures)[number]["id"];
@@ -24,41 +24,39 @@ const tools = {
 
 export function SvgTools() {
   const [selected, setSelected] = useState<FigureId>("microscope");
-  const selectedTool = figures.find((figure) => figure.id === selected)!;
+  const [controlsOpen, setControlsOpen] = useState(false);
+  const title = figures.find((figure) => figure.id === selected)!.label;
   const Tool = tools[selected];
+
+  function selectFigure(id: FigureId) {
+    setSelected(id);
+    setControlsOpen(false);
+    window.scrollTo(0, 0);
+  }
 
   return (
     <div className="svg-tools-shell">
-      <div className="svg-tools-heading">
-        <div>
-          <span className="svg-tools-kicker">TOOLS / SVG</span>
-          <h1>SVG tools</h1>
-          <p>Choose a figure and try it.</p>
-        </div>
-      </div>
-      <nav className="svg-tools-list" aria-label="SVG tools">
-        {figures.map((figure) => (
-          <Button
-            key={figure.id}
-            type="button"
-            variant={selected === figure.id ? "primary" : "secondary"}
-            size="sm"
-            aria-current={selected === figure.id ? "true" : undefined}
-            onClick={() => setSelected(figure.id)}
-          >
-            {figure.label}
-          </Button>
-        ))}
-      </nav>
-      <section className="svg-tools-workspace" aria-labelledby="svg-tool-title">
-        <div className="svg-tools-workspace-heading">
-          <h2 id="svg-tool-title">{selectedTool.label}</h2>
-          <span>{selectedTool.hint}</span>
-        </div>
-        <div className="svg-tools-figure" key={selected}>
+      <section className="svg-tools-workspace" aria-label={`${title} tool`}>
+        <div id="svg-tools-figure-controls" className="svg-tools-figure" data-controls-open={controlsOpen} key={selected}>
           <Tool />
         </div>
       </section>
+      <div className="svg-tools-dock" role="group" aria-label="SVG tool controls">
+        <div className="svg-tools-picker">
+          <span className="svg-tools-picker-label">Tool</span>
+          <div className="svg-tools-picker-wrap">
+            <select aria-label="Choose a tool" value={selected} onChange={(event) => selectFigure(event.target.value as FigureId)}>
+              {figures.map((figure) => <option key={figure.id} value={figure.id}>{figure.label}</option>)}
+            </select>
+            <ChevronDown aria-hidden="true" size={15} />
+          </div>
+        </div>
+        <span className="svg-tools-dock-rule" aria-hidden="true" />
+        <button className="svg-tools-controls-toggle" type="button" aria-expanded={controlsOpen} aria-controls="svg-tools-figure-controls" onClick={() => setControlsOpen((open) => !open)}>
+          {controlsOpen ? <X aria-hidden="true" size={17} /> : <SlidersHorizontal aria-hidden="true" size={17} />}
+          <span>{controlsOpen ? "Close controls" : "Controls"}</span>
+        </button>
+      </div>
     </div>
   );
 }

@@ -44,7 +44,7 @@ export function ComputerLive({ artwork, model }: { artwork: React.ReactNode; mod
     const keyStates = model.keys.map(() => ({ at: 0, held: 0 }));
     const active = new Set<number>();
     const still = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let power = true, energy = 1, line = "", lastKey = "";
+    let power = true, energy = 1, line = "";
     let frame = 0, previous = 0, visible = false, touring = !still.matches;
     let phrase = 0, index = 0, wait = 1.6, erasing = false;
     let shift = false, capsLock = false;
@@ -53,7 +53,14 @@ export function ComputerLive({ artwork, model }: { artwork: React.ReactNode; mod
       text.textContent = "> " + line;
       cursor.setAttribute("x", String(model.textX + text.getComputedTextLength() + 0.5));
       if (readoutRef.current) {
-        readoutRef.current.textContent = power ? `ON · ${line.length.toString().padStart(2, "0")} / ${model.maxChars} CHARS${lastKey ? " · " + lastKey : ""}` : "OFF · PHOSPHOR AT REST";
+        const remaining = model.maxChars - line.length;
+        readoutRef.current.textContent = !power
+          ? "Computer is off"
+          : line.length === 0
+            ? "Type something on the keyboard"
+            : remaining === 0
+              ? "The screen is full"
+              : `You can type ${remaining} more characters`;
       }
     }
 
@@ -82,7 +89,6 @@ export function ComputerLive({ artwork, model }: { artwork: React.ReactNode; mod
       press(code);
       if (SHIFTED[character] || character !== character.toLowerCase()) press("Shift", 0.14);
       if (!power) return;
-      lastKey = character === " " ? "SPACE" : character.toUpperCase();
       if (line.length < model.maxChars) line += character;
       write();
     }
@@ -91,7 +97,6 @@ export function ComputerLive({ artwork, model }: { artwork: React.ReactNode; mod
       press("Backspace");
       if (!power) return;
       line = line.slice(0, -1);
-      lastKey = "BACKSPACE";
       write();
     }
 
@@ -99,7 +104,6 @@ export function ComputerLive({ artwork, model }: { artwork: React.ReactNode; mod
       press(code);
       if (!power) return;
       line = "";
-      lastKey = "RETURN";
       write();
     }
 
@@ -131,7 +135,6 @@ export function ComputerLive({ artwork, model }: { artwork: React.ReactNode; mod
         phrase = (phrase + 1) % PHRASES.length;
         index = 0;
         erasing = false;
-        lastKey = "";
         wait = 1;
         write();
       }
@@ -206,10 +209,10 @@ export function ComputerLive({ artwork, model }: { artwork: React.ReactNode; mod
     const onStillness = () => { if (still.matches) touring = false; run(); };
     actions.current = {
       toggle() { takeOver(); setPower(!power); },
-      clear() { takeOver(); line = ""; lastKey = ""; write(); stage.focus({ preventScroll: true }); },
+      clear() { takeOver(); line = ""; write(); stage.focus({ preventScroll: true }); },
       demo() {
         touring = !still.matches;
-        phrase = 0; index = 0; wait = 0.6; erasing = false; lastKey = "";
+        phrase = 0; index = 0; wait = 0.6; erasing = false;
         line = still.matches ? PHRASES[0] : "";
         setPower(true); write(); run();
       },
@@ -232,17 +235,17 @@ export function ComputerLive({ artwork, model }: { artwork: React.ReactNode; mod
   return (
     <figure className="terminal iso" data-theme={theme} data-powered={powered}>
       <div className="terminal-card">
-        <div className="terminal-card-top"><span>FIG. 02 <i /> PERSONAL COMPUTER</span><Button variant="secondary" type="button" onClick={() => setTheme(theme === "light" ? "dark" : "light")} aria-label={theme === "light" ? "Switch to night view" : "Switch to paper view"}>{theme === "light" ? "◐ NIGHT VIEW" : "◑ PAPER VIEW"}</Button></div>
-        <div ref={stageRef} className="terminal-stage" tabIndex={0} role="group" aria-label="Interactive vintage computer. Type to write on its screen. Backspace erases, Return clears, Escape toggles power." aria-describedby="computer-hint" data-inview="false" data-power="on">
+        <div className="terminal-card-top"><span>FIG. 02 <i /> PERSONAL COMPUTER</span><Button variant="secondary" type="button" onClick={() => setTheme(theme === "light" ? "dark" : "light")} aria-label={theme === "light" ? "Switch to night view" : "Switch to day view"}>{theme === "light" ? "◐ Night view" : "◑ Day view"}</Button></div>
+        <div ref={stageRef} className="terminal-stage" tabIndex={0} role="group" aria-label="Interactive computer. Type to write on the screen. Backspace deletes, Enter clears, and Escape turns the computer on or off." aria-describedby="computer-hint" data-inview="false" data-power="on">
           {artwork}
           <span ref={statusRef} className="terminal-sr" aria-live="polite" />
         </div>
-        <div className="terminal-card-bottom"><span id="computer-hint">CLICK A KEY, OR FOCUS & TYPE</span><output ref={readoutRef}>ON · 00 / 20 CHARS</output></div>
+        <div className="terminal-card-bottom"><span id="computer-hint">Click a key, or select the computer and type.</span><output ref={readoutRef}>Type something on the keyboard</output></div>
       </div>
       <figcaption className="terminal-caption">
         <div className="terminal-controls">
-          <Button variant="primary" type="button" className="power-button" onClick={() => actions.current?.toggle()} aria-label={powered ? "Power off computer" : "Power on computer"}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v7M5.5 4.8a6.6 6.6 0 1 0 9 0" /></svg><span>POWER {powered ? "ON" : "OFF"}</span><i /></Button>
-          <Button variant="secondary" type="button" className="text-button" onClick={() => actions.current?.demo()}>↻ Replay typing</Button>
+          <Button variant="primary" type="button" className="power-button" onClick={() => actions.current?.toggle()} aria-label={powered ? "Turn off computer" : "Turn on computer"}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v7M5.5 4.8a6.6 6.6 0 1 0 9 0" /></svg><span>{powered ? "Turn off" : "Turn on"}</span><i /></Button>
+          <Button variant="secondary" type="button" className="text-button" onClick={() => actions.current?.demo()}>↻ Show typing demo</Button>
           <Button variant="secondary" type="button" className="text-button" onClick={() => actions.current?.clear()}>Clear screen</Button>
         </div>
       </figcaption>

@@ -153,15 +153,15 @@ function MicroscopeArt({ paused }: { paused: boolean }) {
     <div className="ms-plate-wrap" data-paused={paused ? "" : undefined}>
       <Plate
         fig="FIG. 01"
-        title="TRANSMITTED LIGHT · 10×"
-        hint="Animated center and marginal rays"
-        readout="10× objective / 100× total"
+        title="HOW LIGHT MOVES"
+        hint="Follow the light through the microscope"
+        readout="Zoomed in 100 times"
         keys={[
           { mark: "blue", label: "Light path" },
           { mark: "raised", label: "Machined housing" },
           { mark: "flat", label: "Glass optics" },
         ]}
-        caption="The objective forms an inverted real image inside the tube; the eyepiece magnifies it for the eye."
+        caption="Light passes through the sample and lenses so you can see more detail."
       >
         <IsoFigure
           width={WIDTH}
@@ -346,10 +346,10 @@ export function MicroscopeFigure() {
     <div className="microscope-figure">
       <MicroscopeArt paused={paused} />
       <div className="ms-figure-tools">
-        <span className="ms-live-indicator"><i /> {paused ? "LIGHT PATH HELD" : "ILLUMINATOR ACTIVE"}</span>
+        <span className="ms-live-indicator"><i /> {paused ? "Light paused" : "Light is moving"}</span>
         <Button variant="primary" type="button" className="ms-flow-toggle" onClick={() => setPaused((value) => !value)}>
           <span aria-hidden="true">{paused ? "▶" : "Ⅱ"}</span>
-          {paused ? "Resume light path" : "Pause light path"}
+          {paused ? "Play light" : "Pause light"}
         </Button>
       </div>
     </div>

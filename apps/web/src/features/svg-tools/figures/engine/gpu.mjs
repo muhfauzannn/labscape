@@ -14,7 +14,7 @@ uniform vec2 uOrigin;
 uniform float uScale;
 uniform vec2 uView;
 uniform vec2 uCanvas;
-uniform int uPass;
+uniform highp int uPass;
 out vec3 vNormal;
 out float vAlpha;
 flat out int vMaterial;
@@ -38,7 +38,7 @@ uniform vec3 uRamp[40];
 uniform vec3 uEdge[8];
 uniform vec3 uLight;
 uniform vec3 uBackground;
-uniform int uPass;
+uniform highp int uPass;
 uniform int uHighlight;
 out vec4 outColor;
 void main(){

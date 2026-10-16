@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function SvgToolsPage() {
   return (
     <>
-      <SiteHeader />
+      <SiteHeader closeOnMount />
       <main id="main-content" className="svg-tools iso" data-theme="light">
         <SvgTools />
       </main>

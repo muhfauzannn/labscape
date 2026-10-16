@@ -5,10 +5,10 @@ import * as React from "react";
 import { forces,freshFlight,snapshot,stepFlight } from "./model";
 
 const PARTS=[
-  {id:"nose",name:"Nose cone",title:"A smooth path through the air.",description:"The tapered nose covers the payload bay and shapes the airflow around the vehicle."},
-  {id:"tank",name:"Propellant tanks",title:"Two tanks. One reaction.",description:"The upper vessel holds oxidizer; the lower holds fuel. Both feed the engine cluster. Open the skin to look inside."},
-  {id:"engine",name:"Engine cluster",title:"Gas down. Rocket up.",description:"Three bell nozzles accelerate hot gas downward. The equal and opposite force acts upward on the rocket."},
-  {id:"fins",name:"Stabilizing fins",title:"Keep the nose pointing forward.",description:"Four swept fins help stabilize the rocket in the atmosphere. The engines provide the upward thrust."},
+  {id:"nose",name:"Nose",title:"A smooth path through the air.",description:"The pointed nose helps the rocket move through the air."},
+  {id:"tank",name:"Fuel tanks",title:"Fuel for the flight.",description:"Two tanks hold what the engines need to launch. Open the rocket to look inside."},
+  {id:"engine",name:"Engines",title:"Gas down. Rocket up.",description:"The engines push hot gas down, lifting the rocket up."},
+  {id:"fins",name:"Fins",title:"Keep the rocket steady.",description:"The fins help keep the rocket pointed in the right direction."},
 ];
 interface RocketModel {width:number;height:number;zscale:number;unitsPerMeter:number;solids:number;}
 
@@ -56,13 +56,13 @@ export function RocketLive({artwork,model}:{artwork:React.ReactNode;model:Rocket
         el.style.opacity=String((.23-(i%4)*.035)*pulse);
       });
       pool.style.opacity=String(intensity*Math.max(0,1-state.height/8));
-      const phase=state.finished?"OBSERVATION COMPLETE":!state.started?"READY FOR IGNITION":paused?"FLIGHT PAUSED":state.height>.005?"LIFTOFF · THRUST > WEIGHT":f.thrust>0?"IGNITION · ON THE PAD":"READY FOR IGNITION";
+      const phase=state.finished?"Flight complete":!state.started?"Ready to launch":paused?"Flight paused":state.height>.005?"Rocket is rising":f.thrust>0?"Engines started":"Ready to launch";
       if(phase!==lastPhase) {say("phase",phase);say("announce",phase.toLowerCase()+".");lastPhase=phase;}
       if(clock-lastReadout>.06||paused||state.finished||!state.started||still.matches) {
         say("height",state.height.toFixed(1));say("velocity",state.velocity.toFixed(1));
         say("thrust",(f.thrust/1000).toFixed(1));say("ratio",f.ratio.toFixed(2));
         say("force-thrust",`${(f.thrust/1000).toFixed(1)} kN`);say("force-weight",`${(f.weight/1000).toFixed(1)} kN`);
-        say("readout",`T + ${state.time.toFixed(1).padStart(4,"0")} s · ${state.mass.toFixed(0)} kg · ${f.acceleration.toFixed(1)} m/s²`);
+        say("readout",!state.started?"Ready to launch":`${state.time.toFixed(1)} seconds into flight`);
         lastReadout=clock;
       }
       thrustBar.style.width=`${f.thrust/180000*100}%`;
@@ -127,29 +127,29 @@ export function RocketLive({artwork,model}:{artwork:React.ReactNode;model:Rocket
 
   return <figure ref={root} className="rocket iso" data-theme={theme} data-cutaway={cutaway} data-focus={selected}>
     <div className="rocket-card">
-      <div className="rocket-card-top"><span><b>FIG. 03</b><i/> ANATOMY OF LIFTOFF</span><Button variant="secondary" onClick={()=>setTheme(theme==="light"?"dark":"light")} aria-label={`Switch to ${theme==="light"?"night":"paper"} view`}>{theme==="light"?"◐ NIGHT VIEW":"◑ PAPER VIEW"}</Button></div>
+      <div className="rocket-card-top"><span><b>FIG. 03</b><i/> ROCKET LAUNCH</span><Button variant="secondary" onClick={()=>setTheme(theme==="light"?"dark":"light")} aria-label={`Switch to ${theme==="light"?"night":"day"} view`}>{theme==="light"?"◐ Night view":"◑ Day view"}</Button></div>
       <div className="rocket-workbench">
-        <div ref={stage} className="rocket-stage" tabIndex={0} role="group" aria-label="Rocket launch simulation. Space starts or pauses. Up and down change throttle. C toggles cutaway. R resets.">
-          <div className="rocket-scene-note">EXPERIMENT 003<span>VERTICAL FLIGHT / 06 SECONDS</span></div>
+        <div ref={stage} className="rocket-stage" tabIndex={0} role="group" aria-label="Rocket launch. Press Space to launch or pause. Up and down change engine power. C shows the inside. R starts over.">
+          <div className="rocket-scene-note">ROCKET LAUNCH<span>WATCH THE ROCKET RISE</span></div>
           {artwork}
           <div className="rocket-direction" aria-hidden="true"><span><b>↑</b> ROCKET</span><span><b>↓</b> EXHAUST</span></div>
-          <div className="rocket-stage-corner"><b data-value="phase">READY FOR IGNITION</b><br/>24 M CLASS / THREE ENGINES</div>
+          <div className="rocket-stage-corner"><b data-value="phase">Ready to launch</b></div>
         </div>
         <aside className="rocket-panel" aria-label="Rocket parts and launch controls">
-          <div className="rocket-panel-heading"><i/> EXPLORE THE VEHICLE</div>
+          <div className="rocket-panel-heading"><i/> Explore the rocket</div>
           <ol className="rocket-part-list">{PARTS.map((p,i)=><li key={p.id}><Button variant="secondary" aria-pressed={selected===p.id} onClick={()=>select(p.id)}><span>0{i+1}</span><strong>{p.name}</strong><i>{selected===p.id?"−":"+"}</i></Button></li>)}</ol>
           <div className="rocket-part-description"><h3>{description.title}</h3><p>{description.description}</p></div>
-          <label className="rocket-cutaway">REVEAL INTERNAL TANKS<input type="checkbox" checked={cutaway} onChange={e=>{actions.current?.touch();setCutaway(e.target.checked);}}/><i aria-hidden="true"/></label>
-          <div className="rocket-throttle"><label htmlFor="rocket-throttle">THROTTLE<output>{throttle}%</output></label><input id="rocket-throttle" type="range" min="0" max="100" step="1" value={throttle} onChange={e=>{const value=Number(e.target.value);setThrottle(value);actions.current?.throttle(value);}}/><div className="rocket-range-notes"><span>0 / COLD</span><span>100 / FULL THRUST</span></div></div>
-          <div className="rocket-force"><div>THRUST ↑<span><i data-thrust-bar=""/></span><b data-value="force-thrust">0.0 kN</b></div><div>WEIGHT ↓<span><i data-weight-bar=""/></span><b data-value="force-weight">117.7 kN</b></div></div>
-          <Button variant="primary" className="rocket-launch" onClick={()=>actions.current?.launch()}><span aria-hidden="true">{mode==="running"?"Ⅱ":mode==="paused"?"▷":"↑"}</span>{mode==="running"?"PAUSE FLIGHT":mode==="paused"?"RESUME FLIGHT":mode==="finished"?"REPLAY LAUNCH":"IGNITE & LAUNCH"}</Button>
-          <Button variant="secondary" className="rocket-reset" onClick={()=>actions.current?.reset()}>↻ Reset experiment</Button>
+          <label className="rocket-cutaway">Show inside rocket<input type="checkbox" checked={cutaway} onChange={e=>{actions.current?.touch();setCutaway(e.target.checked);}}/><i aria-hidden="true"/></label>
+          <div className="rocket-throttle"><label htmlFor="rocket-throttle">Engine power<output>{throttle}%</output></label><input id="rocket-throttle" type="range" min="0" max="100" step="1" value={throttle} onChange={e=>{const value=Number(e.target.value);setThrottle(value);actions.current?.throttle(value);}}/><div className="rocket-range-notes"><span>Off</span><span>Full power</span></div></div>
+          <div className="rocket-force"><div>Engine push ↑<span><i data-thrust-bar=""/></span><b data-value="force-thrust">0.0 kN</b></div><div>Rocket weight ↓<span><i data-weight-bar=""/></span><b data-value="force-weight">117.7 kN</b></div></div>
+          <Button variant="primary" className="rocket-launch" onClick={()=>actions.current?.launch()}><span aria-hidden="true">{mode==="running"?"Ⅱ":mode==="paused"?"▷":"↑"}</span>{mode==="running"?"Pause flight":mode==="paused"?"Resume flight":mode==="finished"?"Launch again":"Launch rocket"}</Button>
+          <Button variant="secondary" className="rocket-reset" onClick={()=>actions.current?.reset()}>↻ Start over</Button>
         </aside>
       </div>
-      <div className="rocket-card-bottom"><span>SPACE TO LAUNCH · ↑ ↓ THROTTLE · C CUTAWAY</span><output data-value="readout">T + 00.0 s · 12000 kg · 0.0 m/s²</output></div>
+      <div className="rocket-card-bottom"><span>Press Space to launch</span><output data-value="readout">Ready to launch</output></div>
     </div>
-    <dl className="rocket-telemetry"><div><dt>ALTITUDE</dt><dd><span data-value="height">0.0</span><small>m</small></dd></div><div><dt>VERTICAL VELOCITY</dt><dd><span data-value="velocity">0.0</span><small>m/s</small></dd></div><div><dt>TOTAL THRUST</dt><dd><span data-value="thrust">0.0</span><small>kN</small></dd></div><div><dt>THRUST / WEIGHT</dt><dd><span data-value="ratio">0.00</span><small>×</small></dd></div></dl>
+    <dl className="rocket-telemetry"><div><dt>Height</dt><dd><span data-value="height">0.0</span><small>m</small></dd></div><div><dt>Climbing speed</dt><dd><span data-value="velocity">0.0</span><small>m/s</small></dd></div><div><dt>Engine push</dt><dd><span data-value="thrust">0.0</span><small>kN</small></dd></div><div><dt>Lift vs. weight</dt><dd><span data-value="ratio">0.00</span><small>×</small></dd></div></dl>
     <span className="rocket-sr" data-value="announce" aria-live="polite"/>
-    <figcaption className="rocket-sr">An illustrative liquid rocket, {model.solids} solid parts. Exhaust downward produces thrust upward; liftoff starts when thrust exceeds weight. Six seconds of ideal vertical flight with changing propellant mass and no drag. Camera follows after five metres. <a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/rocket-thrust-equation/">NASA rocket thrust equation</a>.</figcaption>
+    <figcaption className="rocket-sr">The engines push gas down to lift the rocket. This illustration shows six seconds of flight. <a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/rocket-thrust-equation/">Learn how rocket engines work at NASA</a>.</figcaption>
   </figure>;
 }
