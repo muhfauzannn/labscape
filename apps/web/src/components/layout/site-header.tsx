@@ -179,6 +179,7 @@ function MobileNavigation({ onNavigate }: { onNavigate: () => void }) {
         <Link href="/tools/svg" onClick={onNavigate}>SVG tools</Link>
         <Link href="/design-system" onClick={onNavigate}>Design system</Link>
         <Link href="/#playground" onClick={onNavigate}>Interactive preview</Link>
+        <Link href="/login" onClick={onNavigate}>Sign in</Link>
       </div>
       <div className={styles.mobileUnavailable}>
         <Plug aria-hidden="true" size={16} />
@@ -270,6 +271,7 @@ export function SiteHeader({ overlay = false, closeOnMount = false }: { overlay?
             </div>
           </NavigationMenu.Root>
           <div className={styles.actions}>
+            <Link href="/login" className={styles.signIn}>Sign in</Link>
             <Button asChild size="sm" className={styles.getStarted}>
               <Link href="/#playground">
                 Try it out <ArrowRight aria-hidden="true" size={15} />
