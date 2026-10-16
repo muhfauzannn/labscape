@@ -5,7 +5,7 @@ import "@/features/svg-tools/svg-tools.css";
 
 export const metadata: Metadata = {
   title: "SVG tools",
-  description: "Five interactive SVG tools.",
+  description: "Six interactive SVG tools.",
 };
 
 export default function SvgToolsPage() {

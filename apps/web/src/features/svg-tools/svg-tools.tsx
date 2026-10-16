@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronDown, SlidersHorizontal, X } from "lucide-react";
+import { LiveAssistant } from "./live-assistant";
 
 const figures = [
   { id: "microscope", label: "Light path" },
@@ -10,6 +11,7 @@ const figures = [
   { id: "rocket", label: "Rocket" },
   { id: "engine", label: "Engine" },
   { id: "microscope-lab", label: "Microscope" },
+  { id: "typewriter", label: "Typewriter" },
 ] as const;
 
 type FigureId = (typeof figures)[number]["id"];
@@ -20,12 +22,14 @@ const tools = {
   rocket: dynamic(() => import("./figures/rocket/art").then((m) => m.RocketArt)),
   engine: dynamic(() => import("./figures/engine/art").then((m) => m.EngineArt)),
   "microscope-lab": dynamic(() => import("./figures/microscope-lab/art").then((m) => m.MicroscopeArt)),
+  typewriter: dynamic(() => import("./figures/typewriter/figure").then((m) => m.TypewriterFigure)),
 };
 
 export function SvgTools() {
   const [selected, setSelected] = useState<FigureId>("microscope");
   const [controlsOpen, setControlsOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const figureRootRef = useRef<HTMLDivElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -117,7 +121,7 @@ export function SvgTools() {
   return (
     <div className="svg-tools-shell">
       <section className="svg-tools-workspace" aria-label={`${title} tool`}>
-        <div id="svg-tools-figure-controls" className="svg-tools-figure" data-controls-open={controlsOpen} key={selected}>
+        <div ref={figureRootRef} id="svg-tools-figure-controls" className="svg-tools-figure" data-controls-open={controlsOpen} key={selected}>
           <Tool />
         </div>
       </section>
@@ -187,6 +191,8 @@ export function SvgTools() {
           {controlsOpen ? <X aria-hidden="true" size={17} /> : <SlidersHorizontal aria-hidden="true" size={17} />}
           <span>{controlsOpen ? "Close controls" : "Controls"}</span>
         </button>
+        <span className="svg-tools-dock-rule" aria-hidden="true" />
+        <LiveAssistant toolId={selected} toolLabel={title} toolRoot={figureRootRef} />
       </div>
     </div>
   );

@@ -9,10 +9,12 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"labai/apps/api/internal/httpapi"
+	"labai/apps/api/internal/live"
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -30,7 +32,8 @@ func run() error {
 		return err
 	}
 
-	server := httpapi.NewServer(addr)
+	issuer := live.NewTokenIssuer(os.Getenv("GEMINI_API_KEY"), os.Getenv("GEMINI_LIVE_MODEL"), nil)
+	server := httpapi.NewServer(addr, issuer, allowedWebOrigins(os.Getenv("WEB_ORIGINS")), os.Getenv("TRUST_PROXY") == "true")
 	serverErrors := make(chan error, 1)
 
 	go func() {
@@ -64,6 +67,18 @@ func run() error {
 
 	slog.Info("API stopped")
 	return nil
+}
+
+func allowedWebOrigins(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return []string{"http://localhost:3000", "http://127.0.0.1:3000"}
+	}
+
+	origins := strings.Split(value, ",")
+	for index, origin := range origins {
+		origins[index] = strings.TrimSpace(origin)
+	}
+	return origins
 }
 
 func listenAddress() (string, error) {
