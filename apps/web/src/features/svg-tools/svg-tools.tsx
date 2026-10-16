@@ -1,18 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronDown, SlidersHorizontal, X } from "lucide-react";
+import { toolCatalog } from "@/lib/tool-catalog";
 import { LiveAssistant } from "./live-assistant";
 
-const figures = [
-  { id: "computer", label: "Computer" },
-  { id: "rocket", label: "Rocket" },
-  { id: "engine", label: "Engine" },
-  { id: "microscope-lab", label: "Microscope" },
-  { id: "typewriter", label: "Typewriter" },
-  { id: "printer", label: "3D printer" },
-] as const;
+const figures = toolCatalog;
 
 type FigureId = (typeof figures)[number]["id"];
 
@@ -26,7 +21,13 @@ const tools = {
 };
 
 export function SvgTools() {
-  const [selected, setSelected] = useState<FigureId>("computer");
+  const searchParams = useSearchParams();
+  const requested = searchParams.get("tool");
+  // A question asked on the landing page; read once, then dropped from the address so a reload doesn't resend it.
+  const [question] = useState(() => searchParams.get("ask")?.trim().slice(0, 500) ?? "");
+  const [selected, setSelected] = useState<FigureId>(
+    () => figures.find((figure) => figure.id === requested)?.id ?? "computer",
+  );
   const [controlsOpen, setControlsOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const figureRootRef = useRef<HTMLDivElement>(null);
@@ -64,8 +65,17 @@ export function SvgTools() {
     [],
   );
 
+  useEffect(() => {
+    if (!question) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("ask");
+    window.history.replaceState(null, "", url);
+  }, [question]);
+
   function selectFigure(id: FigureId) {
     setSelected(id);
+    // Keep the address shareable: /start?tool=rocket opens the rocket.
+    window.history.replaceState(null, "", `?tool=${id}`);
     setControlsOpen(false);
     setPickerOpen(false);
     window.scrollTo(0, 0);
@@ -192,7 +202,7 @@ export function SvgTools() {
           <span>{controlsOpen ? "Close controls" : "Controls"}</span>
         </button>
       </div>
-      <LiveAssistant toolId={selected} toolLabel={title} toolRoot={figureRootRef} />
+      <LiveAssistant toolId={selected} toolLabel={title} toolRoot={figureRootRef} initialQuestion={question} />
     </div>
   );
 }

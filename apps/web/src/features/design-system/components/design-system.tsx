@@ -91,7 +91,7 @@ export function DesignSystem() {
     <div className={styles.layout}>
       <aside className={styles.sidebar}>
         <div className={styles.sidebarTitle}>
-          THE LABAI LANGUAGE <Badge>1.0</Badge>
+          THE LABSCAPE LANGUAGE <Badge>1.0</Badge>
         </div>
         <nav aria-label="Design system sections">
           {sections.map(({ id, label, icon: Icon }) => (
@@ -150,7 +150,7 @@ export function DesignSystem() {
             </Badge>
             <span>Version 1.0</span>
             <span className={styles.divider} />
-            Inspired by Fillout. Crafted for Labai.
+            Inspired by Fillout. Crafted for Labscape.
             <a href="#colors">
               Explore the system <ArrowDown aria-hidden="true" size={13} />
             </a>
@@ -544,7 +544,7 @@ export function DesignSystem() {
         </Section>
         <footer className={styles.footer}>
           <span>
-            <strong>labai.</strong> Made of thoughtful little things.
+            <strong>labscape.</strong> Made of thoughtful little things.
           </span>
           <a href="#overview" onClick={() => setActive("overview")}>
             Back to top ↑

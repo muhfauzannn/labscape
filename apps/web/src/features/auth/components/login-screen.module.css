@@ -19,40 +19,12 @@
 .submit:hover { background: #efc34d; }
 .submit:active { transform: translateY(1px); }
 .submit:disabled { opacity: .6; cursor: wait; }
-.help { margin-top: 37px; color: #777; font-size: 12px; text-align: center; }
-.visual { position: relative; overflow: hidden; border-radius: 16px; background-color: #4f8dcb; background-image: linear-gradient(90deg, transparent 0 80%, #ffffff09 80% 100%), linear-gradient(0deg, transparent 0 77%, #ffffff08 77% 100%); background-size: 137px 137px, 111px 111px; color: white; }
-.visual::before { content: ""; position: absolute; inset: 0; opacity: .26; background: repeating-linear-gradient(90deg, transparent 0 54px, #ffffff0a 54px 106px, transparent 106px 159px), repeating-linear-gradient(0deg, transparent 0 47px, #ffffff0b 47px 91px, transparent 91px 162px); }
+.visual { position: relative; overflow: hidden; border-radius: 16px; background: var(--sky); color: white; }
+.visualImage { z-index: 0; object-fit: cover; object-position: center; }
+.visual::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, #0a436f91 0%, #0a436f52 30%, transparent 53%); pointer-events: none; }
 .visualCopy { position: relative; z-index: 2; margin: 64px 48px 0; max-width: 520px; }
 .visualCopy h2 { font-size: clamp(29px, 2.7vw, 39px); line-height: 1.15; font-weight: 700; letter-spacing: -.035em; }
 .visualCopy p { max-width: 460px; margin-top: 12px; font-size: 16px; line-height: 1.5; color: #e6f2fb; }
-.art { position: absolute; inset: 0; font-size: 13px; color: #252a2c; }
-.tableCard { position: absolute; top: 31%; right: 7%; width: 66%; height: 47%; border: 4px solid #c0d8e5; border-radius: 18px; background: white; overflow: hidden; box-shadow: 0 3px 0 #3274a890, 0 12px 20px #1a50853b; }
-.tableTitle { display: flex; align-items: center; gap: 8px; height: 39px; border-bottom: 1px solid #ececec; padding: 0 14px; font-size: 14px; font-weight: 700; }
-.sheetIcon { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 5px; background: #d7f0df; color: #38865a; font-size: 16px; }
-.tableHeader, .tableRow, .tableGhost { display: grid; grid-template-columns: 42% 30% 28%; align-items: center; padding: 0 16px; }
-.tableHeader { height: 32px; color: #777; background: #f8f8f8; font-size: 12px; }
-.tableRow { height: 36px; background: #edf9ed; font-size: 12px; }
-.tableRow > span:nth-child(2) { color: #5a9a71; }
-.newBadge { width: fit-content; padding: 2px 7px; border-radius: 5px; color: #48a06a; background: #dff4e2; }
-.tableGhost { height: 37px; border-top: 1px solid #f1f1f1; }
-.tableGhost span { width: 55%; height: 8px; border-radius: 9px; background: #eeeeee; }
-.tableGhost span:last-child { width: 36px; height: 17px; background: #e5f7e7; }
-.formCard { position: absolute; left: 7%; top: 51%; width: 37%; min-width: 240px; border: 4px solid #bed6e5; border-radius: 18px; background: white; padding: 10px 12px 12px; box-shadow: 0 10px 18px #1d5b8b40; }
-.formTitle { display: flex; align-items: center; gap: 7px; padding: 0 0 9px; font-size: 13px; font-weight: 700; white-space: nowrap; }
-.formIcon { display: grid; place-items: center; width: 19px; height: 19px; border-radius: 5px; background: #e0e6ff; color: #4a65c4; }
-.previewField { color: #737373; font-size: 11px; margin-top: 6px; }
-.previewField span { display: block; height: 32px; margin-top: 3px; border: 1px solid #ececec; border-radius: 8px; padding: 7px 10px; color: #777; font-size: 12px; }
-.previewButton { display: inline-block; margin-top: 10px; border-radius: 7px; background: #e6ebff; padding: 6px 11px; color: #3858bc; font-weight: 600; }
-.pointer { position: absolute; left: 58px; bottom: 4px; filter: drop-shadow(0 1px 1px #162e65); }
-.sentCard { position: absolute; top: 51%; right: 3%; display: flex; align-items: center; gap: 7px; max-width: 34%; border: 4px solid #d6e4ea; border-radius: 16px; background: white; padding: 8px 10px; box-shadow: 0 8px 18px #1d5b8b40; font-weight: 600; white-space: nowrap; overflow: hidden; }
-.sentIcon { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: 5px; background: #fff1d7; color: #ce8448; }
-.sentBadge { display: flex; align-items: center; gap: 2px; border-radius: 4px; background: #e4f4e7; color: #55a475; padding: 3px 5px; font-size: 10px; }
-.chartCard { position: absolute; right: 11%; top: 67%; width: 27%; height: 19%; border: 4px solid #c7dce7; border-radius: 17px; background: white; box-shadow: 0 10px 18px #1d5b8b40; }
-.chartTitle { display: flex; align-items: center; gap: 7px; height: 37px; border-bottom: 1px solid #eee; padding: 0 10px; font-weight: 700; white-space: nowrap; }
-.chartTitle span { color: #dfae4b; }
-.bars { height: calc(100% - 37px); display: flex; align-items: flex-end; gap: 4px; padding: 9px; }
-.bars i { flex: 1; border-radius: 4px 4px 2px 2px; background: #f5e6bd; }
-.bars i:last-child { background: #f5cd5c; }
-@media (max-width: 900px) { .visualCopy { margin: 46px 28px 0; } .formCard { left: 4%; } .tableCard { right: 4%; width: 74%; } .sentCard { right: 2%; } .chartCard { right: 5%; width: 33%; } }
+@media (max-width: 900px) { .visualCopy { margin: 46px 28px 0; } }
 @media (max-width: 700px) { .shell { display: block; min-height: 100svh; padding: 0; } .formSide { min-height: 100svh; padding: 36px 0; } .formContent { width: min(385px, calc(100% - 48px)); margin: 0; } .brand { margin-bottom: 56px; } .visual { display: none; } }
 @media (prefers-reduced-motion: reduce) { .inputWrap, .submit { transition: none; } }

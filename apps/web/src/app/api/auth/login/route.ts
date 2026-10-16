@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   }
 
   const response = NextResponse.json({ user: result.user });
-  response.cookies.set("labai_session", result.token, {
+  response.cookies.set("labscape_session", result.token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",

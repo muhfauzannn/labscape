@@ -7,19 +7,25 @@ import { gsap } from "gsap";
 import {
   ArrowRight,
   ArrowUpRight,
-  BookOpen,
+  AudioLines,
+  Boxes,
   ChevronDown,
-  FileText,
+  Cog,
+  Keyboard,
   Layers2,
-  Lightbulb,
-  ListChecks,
+  LayoutGrid,
   type LucideIcon,
   Menu,
-  MessageSquare,
-  Plug,
+  Mic,
+  Microscope,
+  Monitor,
+  Printer,
+  Rocket,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { toolCatalog, toolHref, type ToolId } from "@/lib/tool-catalog";
 import styles from "./site-header.module.css";
 
 type NavigationCardProps = {
@@ -29,54 +35,49 @@ type NavigationCardProps = {
   icon: LucideIcon;
 };
 
-const productLinks: NavigationCardProps[] = [
-  {
-    title: "Forms",
-    description: "A clear, friendly way to ask.",
-    href: "/#preview-forms",
-    icon: FileText,
-  },
-  {
-    title: "Surveys",
-    description: "Make room for honest feedback.",
-    href: "/#preview-surveys",
-    icon: MessageSquare,
-  },
-  {
-    title: "Quizzes",
-    description: "Turn a question into a discovery.",
-    href: "/#preview-quizzes",
-    icon: ListChecks,
-  },
-];
+const toolIcons: Record<ToolId, LucideIcon> = {
+  computer: Monitor,
+  rocket: Rocket,
+  engine: Cog,
+  "microscope-lab": Microscope,
+  typewriter: Keyboard,
+  printer: Printer,
+};
 
-const templateLinks: NavigationCardProps[] = [
+const toolLinks: NavigationCardProps[] = toolCatalog.map((tool) => ({
+  title: tool.label,
+  description: tool.blurb,
+  href: toolHref(tool.id),
+  icon: toolIcons[tool.id],
+}));
+
+const learnLinks: NavigationCardProps[] = [
   {
-    title: "Customer feedback",
-    description: "A thoughtful place for opinions.",
-    href: "/#template-customer-feedback",
-    icon: MessageSquare,
+    title: "Explore",
+    description: "Pull machines apart and inspect every part.",
+    href: "/#learn-explore",
+    icon: Boxes,
   },
   {
-    title: "Event registration",
-    description: "Get the important details first.",
-    href: "/#template-event-registration",
-    icon: FileText,
+    title: "Experiment",
+    description: "Change the controls and watch the model respond.",
+    href: "/#learn-experiment",
+    icon: SlidersHorizontal,
   },
   {
-    title: "Say hello",
-    description: "Start with a simple introduction.",
-    href: "/#template-say-hello",
-    icon: Lightbulb,
+    title: "Ask AI",
+    description: "Type or talk, and get an answer about what you see.",
+    href: "/#learn-ask",
+    icon: AudioLines,
   },
 ];
 
 const resourceLinks: NavigationCardProps[] = [
   {
-    title: "SVG tools",
-    description: "Interactive figures.",
-    href: "/tools/svg",
-    icon: Layers2,
+    title: "All tools",
+    description: "Open the lab and pick a machine.",
+    href: "/start",
+    icon: LayoutGrid,
   },
   {
     title: "Design system",
@@ -84,21 +85,15 @@ const resourceLinks: NavigationCardProps[] = [
     href: "/design-system",
     icon: Layers2,
   },
-  {
-    title: "Interactive preview",
-    description: "Try the form, survey, and quiz demos.",
-    href: "/#playground",
-    icon: BookOpen,
-  },
 ];
 
 function Brand() {
   return (
-    <Link href="/" className={styles.brand} aria-label="Labai home">
+    <Link href="/" className={styles.brand} aria-label="Labscape home">
       <span className={styles.mark}>
         <Layers2 aria-hidden="true" size={21} strokeWidth={2.5} />
       </span>
-      labai<span className={styles.dot}>.</span>
+      labscape<span className={styles.dot}>.</span>
     </Link>
   );
 }
@@ -161,30 +156,30 @@ function MenuSection({
 function MobileNavigation({ onNavigate }: { onNavigate: () => void }) {
   return (
     <nav className={styles.mobileNav} aria-label="Mobile navigation">
-      <span className={styles.mobileEyebrow}>Explore Labai</span>
+      <span className={styles.mobileEyebrow}>Explore Labscape</span>
       <div className={styles.mobileGroup}>
-        <span>Products</span>
-        <Link href="/#preview-forms" onClick={onNavigate}>Forms</Link>
-        <Link href="/#preview-surveys" onClick={onNavigate}>Surveys</Link>
-        <Link href="/#preview-quizzes" onClick={onNavigate}>Quizzes</Link>
+        <span>Tools</span>
+        {toolLinks.map((link) => (
+          <Link key={link.href} href={link.href} onClick={onNavigate}>{link.title}</Link>
+        ))}
       </div>
       <div className={styles.mobileGroup}>
-        <span>Templates</span>
-        <Link href="/#template-customer-feedback" onClick={onNavigate}>Customer feedback</Link>
-        <Link href="/#template-event-registration" onClick={onNavigate}>Event registration</Link>
-        <Link href="/#template-say-hello" onClick={onNavigate}>Say hello</Link>
+        <span>How it works</span>
+        {learnLinks.map((link) => (
+          <Link key={link.href} href={link.href} onClick={onNavigate}>{link.title}</Link>
+        ))}
       </div>
       <div className={styles.mobileGroup}>
         <span>Resources</span>
-        <Link href="/tools/svg" onClick={onNavigate}>SVG tools</Link>
-        <Link href="/design-system" onClick={onNavigate}>Design system</Link>
-        <Link href="/#playground" onClick={onNavigate}>Interactive preview</Link>
+        {resourceLinks.map((link) => (
+          <Link key={link.href} href={link.href} onClick={onNavigate}>{link.title}</Link>
+        ))}
         <Link href="/login" onClick={onNavigate}>Sign in</Link>
       </div>
       <div className={styles.mobileUnavailable}>
-        <Plug aria-hidden="true" size={16} />
-        <span>Integrations</span>
-        <span className={styles.availabilityBadge}>Not in demo</span>
+        <Mic aria-hidden="true" size={16} />
+        <span>Labscape AI is in every tool</span>
+        <span className={styles.availabilityBadge}>Voice</span>
       </div>
     </nav>
   );
@@ -229,39 +224,41 @@ export function SiteHeader({ overlay = false, closeOnMount = false }: { overlay?
           >
             <NavigationMenu.List className={styles.menuList}>
               <MenuSection
-                label="Products"
-                title="A small tool. A lot of possibility."
-                description="Choose a format and explore the working preview."
+                label="Tools"
+                title="Six machines to take apart."
+                description="Each one is interactive, and every reading comes from a live model."
               >
-                <MenuCards items={productLinks} />
+                <MenuCards items={toolLinks} />
               </MenuSection>
               <MenuSection
-                label="Templates"
-                title="Start with a good first question."
-                description="Jump to one of the ready-to-try ideas."
+                label="How it works"
+                title="Explore, experiment, then ask."
+                description="Three ways into every tool."
               >
-                <MenuCards items={templateLinks} />
+                <MenuCards items={learnLinks} />
               </MenuSection>
               <MenuSection
-                label="Integrations"
-                title="Not part of this demo."
-                description="The foundation currently demonstrates local forms, surveys, and quizzes."
+                label="AI tutor"
+                title="Labscape AI, built into every tool."
+                description="It sees the tool you have open and can work its controls for you."
               >
                 <div className={styles.integrationNote}>
                   <span className={styles.integrationIcon}>
-                    <Plug aria-hidden="true" size={18} />
+                    <Mic aria-hidden="true" size={18} />
                   </span>
                   <span>
-                    <strong>No integrations are connected.</strong>
-                    <span>This build stays focused on local product previews.</span>
+                    <strong>Type a question, or press the orb to talk.</strong>
+                    <span>In Bahasa Indonesia or English. Drag the orb anywhere on the page.</span>
                   </span>
-                  <span className={styles.availabilityBadge}>Not in demo</span>
+                  <Link href={toolHref("engine")} className={styles.availabilityBadge}>
+                    Try it <ArrowRight aria-hidden="true" size={12} />
+                  </Link>
                 </div>
               </MenuSection>
               <MenuSection
                 label="Resources"
-                title="A little more about the details."
-                description="Inspect the visual rules or try the local demos."
+                title="Everything else."
+                description="Open the full lab or inspect the visual rules."
               >
                 <MenuCards items={resourceLinks} />
               </MenuSection>
@@ -273,8 +270,8 @@ export function SiteHeader({ overlay = false, closeOnMount = false }: { overlay?
           <div className={styles.actions}>
             <Link href="/login" className={styles.signIn}>Sign in</Link>
             <Button asChild size="sm" className={styles.getStarted}>
-              <Link href="/#playground">
-                Try it out <ArrowRight aria-hidden="true" size={15} />
+              <Link href="/start">
+                Open the tools <ArrowRight aria-hidden="true" size={15} />
               </Link>
             </Button>
             <button
@@ -294,8 +291,8 @@ export function SiteHeader({ overlay = false, closeOnMount = false }: { overlay?
       {!closed && <Dialog
         open={mobileOpen}
         onOpenChange={setMobileOpen}
-        title="Explore Labai"
-        description="Jump into a local product preview or inspect the design system."
+        title="Explore Labscape"
+        description="Open a tool, see how it works, or meet the AI tutor."
       >
         <MobileNavigation onNavigate={() => setMobileOpen(false)} />
       </Dialog>}

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"labai/apps/api/internal/live"
+	"labscape/apps/api/internal/live"
 )
 
 type stubTokenIssuer struct {
@@ -23,7 +23,7 @@ func (s *stubTokenIssuer) CreateToken(context.Context) (live.Token, error) {
 
 func TestLiveTokenRouteChecksOriginAndLimitsRequests(t *testing.T) {
 	issuer := &stubTokenIssuer{}
-	server := NewServer(":0", issuer, []string{"https://labai.example"}, false)
+	server := NewServer(":0", issuer, []string{"https://labscape.example"}, false)
 
 	blocked := httptest.NewRequest(http.MethodPost, "/api/live/token", nil)
 	blocked.Header.Set("Origin", "https://other.example")
@@ -35,7 +35,7 @@ func TestLiveTokenRouteChecksOriginAndLimitsRequests(t *testing.T) {
 	}
 
 	withBody := httptest.NewRequest(http.MethodPost, "/api/live/token", strings.NewReader("{}"))
-	withBody.Header.Set("Origin", "https://labai.example")
+	withBody.Header.Set("Origin", "https://labscape.example")
 	withBody.RemoteAddr = "203.0.113.7:1234"
 	bodyResponse := httptest.NewRecorder()
 	server.Handler.ServeHTTP(bodyResponse, withBody)
@@ -45,7 +45,7 @@ func TestLiveTokenRouteChecksOriginAndLimitsRequests(t *testing.T) {
 
 	for attempt := 0; attempt < tokenLimit; attempt++ {
 		request := httptest.NewRequest(http.MethodPost, "/api/live/token", nil)
-		request.Header.Set("Origin", "https://labai.example")
+		request.Header.Set("Origin", "https://labscape.example")
 		request.RemoteAddr = "203.0.113.7:1234"
 		response := httptest.NewRecorder()
 		server.Handler.ServeHTTP(response, request)
@@ -55,7 +55,7 @@ func TestLiveTokenRouteChecksOriginAndLimitsRequests(t *testing.T) {
 	}
 
 	limited := httptest.NewRequest(http.MethodPost, "/api/live/token", nil)
-	limited.Header.Set("Origin", "https://labai.example")
+	limited.Header.Set("Origin", "https://labscape.example")
 	limited.RemoteAddr = "203.0.113.7:1234"
 	limitedResponse := httptest.NewRecorder()
 	server.Handler.ServeHTTP(limitedResponse, limited)

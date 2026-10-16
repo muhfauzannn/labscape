@@ -8,11 +8,11 @@ const sans = localFont({
 });
 export const metadata: Metadata = {
   title: {
-    default: "Labai — A little form. A world of possibilities.",
-    template: "%s · Labai",
+    default: "Labscape — Learn how things work.",
+    template: "%s · Labscape",
   },
   description:
-    "Thoughtful forms, effortless connections. Explore Labai’s form experience and carefully crafted design system.",
+    "Explore interactive machines, experiment with live controls, and ask Labscape AI how things work.",
 };
 export default function RootLayout({
   children,
