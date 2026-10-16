@@ -1,0 +1,46 @@
+name: Deploy Labscape
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: labscape-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: npm install --global pnpm@12.11.2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint && pnpm typecheck && pnpm build
+      - uses: actions/setup-go@v7
+        with:
+          go-version: 1.27.2
+          cache-dependency-path: apps/api/go.mod
+      - run: go -C apps/api build ./...
+
+  deploy:
+    needs: verify
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Deploy and wait for Dokploy
+        run: node scripts/deploy-dokploy.mjs
+        env:
+          DOKPLOY_URL: https://dokploy.muhfauzan.dev
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_COMPOSE_ID: U6-t3pxkFjdKI28b0ggSD

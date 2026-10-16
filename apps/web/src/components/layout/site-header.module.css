@@ -281,6 +281,15 @@
   gap: 9px;
 }
 
+.signIn {
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--ink);
+}
+.signIn:hover { background: var(--surface-subtle); }
+
 .getStarted {
   min-height: 40px;
   border-radius: var(--radius-pill);
@@ -450,6 +459,7 @@
     min-height: 38px;
     padding-inline: 12px;
   }
+  .signIn { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
