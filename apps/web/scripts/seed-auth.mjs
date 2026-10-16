@@ -5,14 +5,14 @@ import { DatabaseSync } from "node:sqlite";
 
 const email = process.env.SEED_EMAIL?.trim().toLowerCase();
 const password = process.env.SEED_PASSWORD;
-const name = process.env.SEED_NAME?.trim() || "Labai Admin";
+const name = process.env.SEED_NAME?.trim() || "Labscape Admin";
 
 if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !password || password.length < 12) {
   console.error("Set SEED_EMAIL and SEED_PASSWORD (at least 12 characters) before running the seeder.");
   process.exit(1);
 }
 
-const filename = resolve(process.env.LABAI_AUTH_DB || "data/auth.sqlite");
+const filename = resolve(process.env.LABSCAPE_AUTH_DB || "data/auth.sqlite");
 mkdirSync(dirname(filename), { recursive: true });
 const db = new DatabaseSync(filename);
 db.exec(`

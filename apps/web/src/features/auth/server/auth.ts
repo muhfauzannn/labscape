@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-const filename = resolve(/* turbopackIgnore: true */ process.env.LABAI_AUTH_DB || "data/auth.sqlite");
+const filename = resolve(/* turbopackIgnore: true */ process.env.LABSCAPE_AUTH_DB || "data/auth.sqlite");
 const sessionAge = 60 * 60 * 24 * 7;
 
 type UserRow = { id: number; email: string; name: string; password_hash: string };

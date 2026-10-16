@@ -12,21 +12,21 @@ export const instant = false;
 
 export default async function DashboardPage() {
   await connection();
-  const token = (await cookies()).get("labai_session")?.value;
+  const token = (await cookies()).get("labscape_session")?.value;
   const user = getSession(token);
   if (!user) redirect("/login");
 
   return (
     <main id="main-content" className={styles.page}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand}>labai<span>.</span></Link>
+        <Link href="/" className={styles.brand}>labscape<span>.</span></Link>
         <LogoutButton />
       </header>
       <section className={styles.content}>
         <span className={styles.eyebrow}>Dashboard</span>
         <h1>Welcome back, {user.name}.</h1>
         <p>You are signed in as {user.email}.</p>
-        <Link href="/tools/svg" className={styles.link}>Explore SVG tools →</Link>
+        <Link href="/start" className={styles.link}>Explore SVG tools →</Link>
       </section>
     </main>
   );

@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"labai/apps/api/internal/live"
+	"labscape/apps/api/internal/live"
 )
 
 const tokenLimit = 5

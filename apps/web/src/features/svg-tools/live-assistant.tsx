@@ -1,26 +1,41 @@
 "use client";
 
+import { ArrowUp, Mic, MicOff, Volume2, VolumeX, X } from "lucide-react";
 import Orb from "@/components/react-bits/Orb";
+import { toolCatalog } from "@/lib/tool-catalog";
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 
-type AssistantStatus = "idle" | "connecting" | "listening" | "thinking" | "speaking" | "error";
+/** "ready" is a connected session with the mic off: the user is typing. */
+type AssistantStatus = "idle" | "connecting" | "ready" | "listening" | "thinking" | "speaking" | "error";
 type ToolScopeRef = RefObject<HTMLDivElement | null>;
 
 type Props = {
   toolId: string;
   toolLabel: string;
   toolRoot: ToolScopeRef;
+  /** A question carried over from the landing page; it is sent as soon as the assistant mounts. */
+  initialQuestion?: string;
+};
+
+type ChatMessage = { id: number; role: "user" | "assistant"; text: string };
+
+type LiveMic = {
+  stream: MediaStream;
+  source: MediaStreamAudioSourceNode;
+  processor: AudioWorkletNode;
+  inputMeter: AnalyserNode;
 };
 
 type LiveSession = {
   socket: WebSocket;
-  stream: MediaStream;
   audio: AudioContext;
-  source: MediaStreamAudioSourceNode;
   output: GainNode;
-  inputMeter: AnalyserNode;
   outputMeter: AnalyserNode;
-  processor: AudioWorkletNode;
+  /** The microphone, attached only while the user talks; a typed conversation has none. */
+  mic: LiveMic | null;
+  workletReady: boolean;
+  /** Typed conversations read the reply instead of hearing it, unless the speaker is turned on. */
+  muted: boolean;
   sources: Set<AudioBufferSourceNode>;
   scheduledAt: number;
   ready: boolean;
@@ -41,6 +56,7 @@ type LiveMessage = {
     outputTranscription?: { text?: string };
     modelTurn?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string } }> };
     interrupted?: boolean;
+    generationComplete?: boolean;
     turnComplete?: boolean;
   };
   toolCall?: { functionCalls?: ControlCall[] };
@@ -53,12 +69,12 @@ const liveEndpoint =
   "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained";
 
 const toolDescriptions: Record<string, string> = {
-  microscope: "A microscope cutaway that shows how light travels through the lenses.",
   computer: "An interactive computer keyboard that shows what happens when you type.",
   rocket: "A rocket launch demo with selectable parts, engine power, and live flight readings.",
   engine: "A two-cylinder engine demo with moving pistons, valves, engine settings, and live readings.",
   "microscope-lab": "A laboratory microscope with selectable parts, lenses, focus, light, and a sample view.",
   typewriter: "A mechanical typewriter demo. Typing moves the keys and typebars and updates the line and column on the paper.",
+  printer: "An FDM 3D printer. Pick an object, set print speed and nozzle temperature, start or pause the print, and open the exploded view to inspect each part.",
 };
 
 const toolFunctions = [
@@ -134,7 +150,7 @@ function controlLabel(input: HTMLInputElement) {
 }
 
 function readToolState(root: HTMLDivElement | null, toolId: string, toolLabel: string) {
-  const tool = { id: toolId, name: toolLabel, description: toolDescriptions[toolId] ?? "An interactive Labai tool." };
+  const tool = { id: toolId, name: toolLabel, description: toolDescriptions[toolId] ?? "An interactive Labscape tool." };
   if (!root) return { tool, status: "Loading tool state" };
 
   const readings = Object.fromEntries(
@@ -237,6 +253,7 @@ const ORB_ERROR = ["#e0645a", "#f09a6b", "#7a1f1a"];
 
 function orbLook(status: AssistantStatus, level: number): OrbLook {
   switch (status) {
+    case "ready": return { speed: 0.9, size: 0.88, glow: 1.3, hover: true, colors: ORB_COLORS };
     case "connecting": return { speed: 2.4, size: 0.86, glow: 1.1, hover: true, colors: ORB_COLORS };
     case "listening": return { speed: 1.1 + level * 2, size: 0.9 + level * 0.22, glow: 1.1 + level, hover: true, colors: ORB_COLORS };
     case "thinking": return { speed: 2.8, size: 0.88, glow: 1.3, hover: true, colors: ORB_COLORS };
@@ -277,17 +294,24 @@ function VoiceOrb({ status, levelOf }: { status: AssistantStatus; levelOf: () =>
   );
 }
 
+function detachMic(session: LiveSession) {
+  const mic = session.mic;
+  if (!mic) return;
+  session.mic = null;
+  mic.processor.port.onmessage = null;
+  mic.source.disconnect();
+  mic.processor.disconnect();
+  mic.stream.getTracks().forEach((track) => track.stop());
+}
+
 function cleanup(session: LiveSession) {
   session.intentionalClose = true;
   if (session.contextTimer) clearTimeout(session.contextTimer);
   if (session.setupTimer) clearTimeout(session.setupTimer);
   stopPlayback(session);
-  session.processor.port.onmessage = null;
-  session.source.disconnect();
+  detachMic(session);
   session.output.disconnect();
   session.outputMeter.disconnect();
-  session.processor.disconnect();
-  session.stream.getTracks().forEach((track) => track.stop());
   if (session.socket.readyState < WebSocket.CLOSING) session.socket.close();
   if (session.audio.state !== "closed") void session.audio.close();
 }
@@ -302,7 +326,7 @@ function matchLabel(query: string, candidates: HTMLElement[], getName = cleanNam
   return matches.length === 1 ? matches[0] : null;
 }
 
-const DOCK_KEY = "labai.assistant.position";
+const DOCK_KEY = "labscape.assistant.position";
 const DRAG_SLOP = 5;
 const EDGE = 8;
 
@@ -426,27 +450,53 @@ function useDraggableDock() {
   return { rootRef, handleRef, onPointerDown, onKeyDown, consumeDrag, reset };
 }
 
-export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
+export function LiveAssistant({ toolId, toolLabel, toolRoot, initialQuestion }: Props) {
   const [status, setStatus] = useState<AssistantStatus>("idle");
-  const [assistantText, setAssistantText] = useState("");
-  const [userText, setUserText] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [draft, setDraft] = useState("");
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [micOn, setMicOn] = useState(false);
+  const [muted, setMuted] = useState(true);
   const [error, setError] = useState("");
   const sessionRef = useRef<LiveSession | null>(null);
   const toolRef = useRef({ id: toolId, label: toolLabel, root: toolRoot });
   const connectRef = useRef(false);
   const cancelConnectRef = useRef(false);
   const connectAbortRef = useRef<AbortController | null>(null);
+  /** Typed messages waiting for the session to finish connecting. */
+  const pendingRef = useRef<string[]>([]);
+  /** Whether the last user / assistant message is still being transcribed. */
+  const openTurn = useRef({ user: false, assistant: false });
+  const messageId = useRef(0);
+  const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { rootRef: dockRootRef, handleRef: dockHandleRef, onPointerDown: onDockPointerDown, onKeyDown: onDockKeyDown, consumeDrag, reset: resetDock } = useDraggableDock();
-
 
   useEffect(() => {
     toolRef.current = { id: toolId, label: toolLabel, root: toolRoot };
   }, [toolId, toolLabel, toolRoot]);
 
+  useEffect(() => {
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
+  }, [messages, error]);
+
   const stateSnapshot = useCallback(() => {
     const current = toolRef.current;
     return readToolState(current.root.current, current.id, current.label);
   }, []);
+
+  /** Adds a transcript piece to the open message of that role, or starts a new message. */
+  const appendLive = useCallback((role: ChatMessage["role"], piece: string) => {
+    const open = openTurn.current[role];
+    openTurn.current[role] = true;
+    setMessages((list) => {
+      const last = list.at(-1);
+      if (open && last?.role === role) return [...list.slice(0, -1), { ...last, text: appendTranscript(last.text, piece) }];
+      return [...list, { id: ++messageId.current, role, text: appendTranscript("", piece) }];
+    });
+  }, []);
+
+  const idleStatus = (session: LiveSession): AssistantStatus => (session.mic ? "listening" : "ready");
 
   const sendState = useCallback((session: LiveSession, turnComplete = false) => {
     if (!session.ready || session.socket.readyState !== WebSocket.OPEN) return;
@@ -463,10 +513,20 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
     }));
   }, []);
 
+  const deliverText = useCallback((session: LiveSession, text: string) => {
+    session.socket.send(JSON.stringify({
+      clientContent: { turns: [{ role: "user", parts: [{ text }] }], turnComplete: true },
+    }));
+    session.turnFinished = false;
+    setStatus("thinking");
+  }, []);
+
   const closeSession = useCallback((nextStatus: AssistantStatus = "idle") => {
     const current = sessionRef.current;
     sessionRef.current = null;
+    pendingRef.current = [];
     if (current) cleanup(current);
+    setMicOn(false);
     setStatus(nextStatus);
   }, []);
 
@@ -478,6 +538,7 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
   }, []);
 
   const playAudio = useCallback((session: LiveSession, data: string, mimeType: string) => {
+    if (session.muted) return;
     const raw = atob(data);
     const pcm = new DataView(new ArrayBuffer(raw.length));
     for (let index = 0; index < raw.length; index++) pcm.setUint8(index, raw.charCodeAt(index));
@@ -496,12 +557,53 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
     source.onended = () => {
       session.sources.delete(source);
       if (sessionRef.current === session && session.turnFinished && session.sources.size === 0) {
-        setStatus("listening");
+        setStatus(idleStatus(session));
       }
     };
     session.turnFinished = false;
     source.start(startsAt);
     setStatus("speaking");
+  }, []);
+
+  /** Turns the microphone on inside an open session, so a typed conversation can carry on by voice. */
+  const attachMic = useCallback(async (session: LiveSession) => {
+    if (session.mic) return;
+    if (!navigator.mediaDevices?.getUserMedia || !("audioWorklet" in AudioContext.prototype)) {
+      throw new Error("Peramban ini belum mendukung percakapan suara.");
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+    if (sessionRef.current !== session) {
+      stream.getTracks().forEach((track) => track.stop());
+      return;
+    }
+    await session.audio.resume();
+    if (!session.workletReady) {
+      await session.audio.audioWorklet.addModule("/audio/gemini-pcm-worklet.js");
+      session.workletReady = true;
+    }
+    const source = session.audio.createMediaStreamSource(stream);
+    const inputMeter = session.audio.createAnalyser();
+    const processor = new AudioWorkletNode(session.audio, "gemini-pcm-capture");
+    source.connect(inputMeter);
+    processor.port.onmessage = (event: MessageEvent<ArrayBuffer>) => sendAudio(session, event.data);
+    session.mic = { stream, source, processor, inputMeter };
+    if (session.ready) {
+      source.connect(processor);
+      processor.connect(session.audio.destination);
+      setStatus("listening");
+    }
+    // Talking means listening for a spoken answer.
+    session.muted = false;
+    setMuted(false);
+    setMicOn(true);
+  }, [sendAudio]);
+
+  const dropMic = useCallback((session: LiveSession) => {
+    detachMic(session);
+    setMicOn(false);
+    if (session.ready && session.sources.size === 0) setStatus("ready");
   }, []);
 
   const runControlCall = useCallback(async (call: ControlCall) => {
@@ -574,66 +676,45 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
     }
   }, [runControlCall]);
 
-  const startSession = useCallback(async () => {
+  const connect = useCallback(async (mode: "voice" | "text") => {
     if (connectRef.current || sessionRef.current) return;
     connectRef.current = true;
     cancelConnectRef.current = false;
     const controller = new AbortController();
     connectAbortRef.current = controller;
     setError("");
-    setAssistantText("");
-    setUserText("");
     setStatus("connecting");
+    openTurn.current = { user: false, assistant: false };
 
-    let stream: MediaStream | null = null;
     let audio: AudioContext | null = null;
     let socket: WebSocket | null = null;
+    let session: LiveSession | null = null;
     try {
-      if (!navigator.mediaDevices?.getUserMedia || !("audioWorklet" in AudioContext.prototype)) {
-        throw new Error("Peramban ini belum mendukung percakapan suara.");
-      }
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
-      if (cancelConnectRef.current) {
-        stream.getTracks().forEach((track) => track.stop());
-        return;
-      }
-
       const tokenResponse = await fetch("/api/live/token", { method: "POST", cache: "no-store", signal: controller.signal });
       if (!tokenResponse.ok) {
-        if (tokenResponse.status === 503) throw new Error("Asisten suara belum disiapkan.");
+        if (tokenResponse.status === 503) throw new Error("Asisten belum disiapkan.");
         if (tokenResponse.status === 429) throw new Error("Tunggu sebentar lalu coba lagi.");
-        throw new Error("Asisten suara sedang tidak tersedia. Coba lagi nanti.");
+        throw new Error("Asisten sedang tidak tersedia. Coba lagi nanti.");
       }
       const credentials = await tokenResponse.json() as { token?: string; model?: string };
-      if (!credentials.token || !credentials.model) throw new Error("Asisten suara sedang tidak tersedia.");
-      if (cancelConnectRef.current) {
-        stream.getTracks().forEach((track) => track.stop());
-        return;
-      }
+      if (!credentials.token || !credentials.model) throw new Error("Asisten sedang tidak tersedia.");
+      if (cancelConnectRef.current) return;
 
       audio = new AudioContext();
-      await audio.resume();
-      await audio.audioWorklet.addModule("/audio/gemini-pcm-worklet.js");
-      if (cancelConnectRef.current) {
-        stream.getTracks().forEach((track) => track.stop());
-        void audio.close();
-        return;
-      }
+      // Outside a click (a question from the landing page) the context may stay suspended; text still works.
+      void audio.resume().catch(() => undefined);
       socket = new WebSocket(`${liveEndpoint}?access_token=${encodeURIComponent(credentials.token)}`);
       // Gemini Live sends its JSON messages as binary frames.
       socket.binaryType = "arraybuffer";
 
-      const session: LiveSession = {
+      const live: LiveSession = {
         socket,
-        stream,
         audio,
-        source: audio.createMediaStreamSource(stream),
         output: audio.createGain(),
-        inputMeter: audio.createAnalyser(),
         outputMeter: audio.createAnalyser(),
-        processor: new AudioWorkletNode(audio, "gemini-pcm-capture"),
+        mic: null,
+        workletReady: false,
+        muted: mode === "text",
         sources: new Set(),
         scheduledAt: audio.currentTime,
         ready: false,
@@ -644,29 +725,30 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
         setupTimer: null,
         intentionalClose: false,
       };
-      session.source.connect(session.inputMeter);
-      session.output.connect(session.outputMeter);
-      session.outputMeter.connect(audio.destination);
-      sessionRef.current = session;
-      session.setupTimer = setTimeout(() => {
-        if (sessionRef.current === session && !session.ready) {
-          setError("Sambungan suara terlalu lama. Coba lagi.");
+      session = live;
+      live.output.connect(live.outputMeter);
+      live.outputMeter.connect(audio.destination);
+      sessionRef.current = live;
+      setMuted(live.muted);
+      live.setupTimer = setTimeout(() => {
+        if (sessionRef.current === live && !live.ready) {
+          setError("Sambungan terlalu lama. Coba lagi.");
           closeSession("error");
         }
       }, 20000);
 
-      session.processor.port.onmessage = (event: MessageEvent<ArrayBuffer>) => sendAudio(session, event.data);
       socket.onopen = () => {
         const current = toolRef.current;
         const initialState = readToolState(current.root.current, current.id, current.label);
-        socket?.send(JSON.stringify({
+        const otherTools = toolCatalog.filter((tool) => tool.id !== current.id).map((tool) => `${tool.label}: ${tool.blurb}`).join(" ");
+        live.socket.send(JSON.stringify({
           setup: {
             model: `models/${credentials.model}`,
             generationConfig: { responseModalities: ["AUDIO"] },
             inputAudioTranscription: { languageCodes: ["id-ID", "en-US"] },
             outputAudioTranscription: { languageCodes: ["id-ID", "en-US"] },
             systemInstruction: {
-              parts: [{ text: `Kamu adalah asisten suara untuk demo alat Labai. Jawab singkat, santai, dan gunakan bahasa pengguna; utamakan Bahasa Indonesia. Kamu memahami satu alat aktif berikut beserta kondisinya. Jika pertanyaan merujuk pada isi alat yang berubah, pilihan aktif, atau angka saat ini, panggil inspect_tool_state sebelum menjawab. Aksi kontrol hanya dilakukan jika pengguna memintanya dengan jelas. Gunakan label tombol, slider, dan sakelar persis seperti yang tersedia. Jangan mengaku mengubah sesuatu jika aksi gagal. Jelaskan alat dengan bahasa mudah, bukan jargon teknis kecuali pengguna memintanya.\n\nALAT DAN KONDISI AWAL:\n${JSON.stringify({ tool: { id: current.id, name: current.label, description: toolDescriptions[current.id] }, state: initialState })}` }],
+              parts: [{ text: `Kamu adalah Labscape AI, asisten belajar untuk alat interaktif Labscape. Pengguna bisa berbicara atau mengetik; jawabanmu juga ditampilkan sebagai teks. Jawab singkat, santai, dan gunakan bahasa pengguna; utamakan Bahasa Indonesia. Kamu memahami satu alat aktif berikut beserta kondisinya. Jika pertanyaan merujuk pada isi alat yang berubah, pilihan aktif, atau angka saat ini, panggil inspect_tool_state sebelum menjawab. Aksi kontrol hanya dilakukan jika pengguna memintanya dengan jelas. Gunakan label tombol, slider, dan sakelar persis seperti yang tersedia. Jangan mengaku mengubah sesuatu jika aksi gagal. Jelaskan alat dengan bahasa mudah, bukan jargon teknis kecuali pengguna memintanya. Jika pertanyaan lebih cocok dengan alat lain, jawab singkat lalu sarankan pengguna membuka alat itu dari menu Tool. Alat lain yang tersedia: ${otherTools}\n\nALAT DAN KONDISI AWAL:\n${JSON.stringify({ tool: { id: current.id, name: current.label, description: toolDescriptions[current.id] }, state: initialState })}` }],
             },
             tools: [{ functionDeclarations: toolFunctions }],
           },
@@ -683,12 +765,17 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
         }
 
         if (message.setupComplete) {
-          if (session.setupTimer) clearTimeout(session.setupTimer);
-          session.ready = true;
-          session.source.connect(session.processor);
-          session.processor.connect(audio!.destination);
-          sendState(session);
-          setStatus("listening");
+          if (live.setupTimer) clearTimeout(live.setupTimer);
+          live.ready = true;
+          if (live.mic) {
+            live.mic.source.connect(live.mic.processor);
+            live.mic.processor.connect(live.audio.destination);
+          }
+          sendState(live);
+          setStatus(idleStatus(live));
+          const queued = pendingRef.current;
+          pendingRef.current = [];
+          for (const text of queued) deliverText(live, text);
         }
 
         const content = message.serverContent;
@@ -696,96 +783,164 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
         const inputText = content?.inputTranscription?.text;
         const outputText = content?.outputTranscription?.text;
         if (interimText || inputText) {
-          if (!session.userTurnStarted) {
-            session.userTurnStarted = true;
-            session.turnFinished = false;
-            setAssistantText("");
-            setUserText("");
+          if (!live.userTurnStarted) {
+            live.userTurnStarted = true;
+            live.turnFinished = false;
+            openTurn.current.assistant = false;
           }
         }
-        if (interimText) setUserText((previous) => appendTranscript(previous, interimText));
+        if (interimText) appendLive("user", interimText);
         if (inputText) {
-          setUserText((previous) => appendTranscript(previous, inputText));
+          appendLive("user", inputText);
           setStatus("thinking");
         }
         if (outputText) {
-          setAssistantText((previous) => appendTranscript(previous, outputText));
-          setStatus("speaking");
+          openTurn.current.user = false;
+          appendLive("assistant", outputText);
+          if (!live.turnFinished || live.sources.size > 0) setStatus("speaking");
         }
         if (content?.modelTurn?.parts) {
           for (const part of content.modelTurn.parts) {
-            if (part.inlineData?.data) playAudio(session, part.inlineData.data, part.inlineData.mimeType ?? "audio/pcm;rate=24000");
+            if (part.inlineData?.data) playAudio(live, part.inlineData.data, part.inlineData.mimeType ?? "audio/pcm;rate=24000");
           }
         }
         if (content?.interrupted) {
-          stopPlayback(session);
-          session.turnFinished = false;
-          setStatus("listening");
+          stopPlayback(live);
+          live.turnFinished = false;
+          openTurn.current.assistant = false;
+          setStatus(idleStatus(live));
+        }
+        // The reply is fully generated well before turnComplete arrives; once nothing is left to play,
+        // the assistant is ready again. The transcript stays open until turnComplete in case text trails.
+        if (content?.generationComplete) {
+          live.turnFinished = true;
+          if (live.sources.size === 0) setStatus(idleStatus(live));
         }
         if (content?.turnComplete) {
-          session.turnFinished = true;
-          session.userTurnStarted = false;
-          if (session.sources.size === 0) setStatus("listening");
+          live.turnFinished = true;
+          live.userTurnStarted = false;
+          openTurn.current = { user: false, assistant: false };
+          if (live.sources.size === 0) setStatus(idleStatus(live));
         }
         if (message.toolCall?.functionCalls) {
           void handleToolCalls(message.toolCall.functionCalls);
         }
-        if (message.goAway && sessionRef.current === session) {
-          setError("Sesi suara akan berakhir. Mulai lagi untuk melanjutkan.");
+        if (message.goAway && sessionRef.current === live) {
+          setError("Sesi akan berakhir. Mulai lagi untuk melanjutkan.");
         }
       };
 
       socket.onerror = () => {
-        if (sessionRef.current !== session) return;
-        setError("Sambungan suara terputus. Coba lagi.");
+        if (sessionRef.current !== live) return;
+        setError("Sambungan terputus. Coba lagi.");
         closeSession("error");
       };
       socket.onclose = (event) => {
-        if (sessionRef.current !== session || session.intentionalClose) return;
-        cleanup(session);
-        sessionRef.current = null;
+        if (sessionRef.current !== live || live.intentionalClose) return;
         if (event.reason) console.warn(`Gemini Live closed (${event.code}): ${event.reason}`);
-        setError(session.ready
-          ? "Sambungan suara berakhir. Mulai lagi untuk melanjutkan."
+        setError(live.ready
+          ? "Sambungan berakhir. Kirim pesan atau tekan orb untuk mulai lagi."
           : `Gemini menolak sambungan${event.reason ? `: ${event.reason}` : ` (kode ${event.code})`}.`);
-        setStatus("error");
+        closeSession("error");
       };
+
+      if (mode === "voice") await attachMic(live);
     } catch (reason) {
-      stream?.getTracks().forEach((track) => track.stop());
-      if (audio && audio.state !== "closed") void audio.close();
-      if (socket && socket.readyState < WebSocket.CLOSING) socket.close();
+      if (session && sessionRef.current === session) closeSession("idle");
+      else {
+        if (audio && audio.state !== "closed") void audio.close();
+        if (socket && socket.readyState < WebSocket.CLOSING) socket.close();
+      }
       if (cancelConnectRef.current) return;
       const errorName = reason instanceof DOMException ? reason.name : "";
       const message = errorName === "NotAllowedError"
-        ? "Izinkan akses mikrofon untuk mulai berbicara."
+        ? "Izinkan akses mikrofon untuk berbicara, atau ketik saja pertanyaanmu."
         : errorName === "NotFoundError"
-          ? "Mikrofon tidak ditemukan."
+          ? "Mikrofon tidak ditemukan. Kamu tetap bisa mengetik."
           : reason instanceof Error
             ? reason.message
-            : "Asisten suara sedang tidak tersedia. Coba lagi nanti.";
+            : "Asisten sedang tidak tersedia. Coba lagi nanti.";
       setError(message);
       setStatus("error");
     } finally {
       connectRef.current = false;
       if (connectAbortRef.current === controller) connectAbortRef.current = null;
     }
-  }, [closeSession, handleToolCalls, playAudio, sendAudio, sendState]);
+  }, [appendLive, attachMic, closeSession, deliverText, handleToolCalls, playAudio, sendState]);
 
-  const toggleSession = useCallback(() => {
-    if (sessionRef.current) {
-      closeSession("idle");
-      setAssistantText("");
-      setUserText("");
-      setError("");
+  /** Sends a typed message, connecting a text session first when none is open. */
+  const sendText = useCallback((raw: string) => {
+    const text = raw.trim();
+    if (!text) return;
+    setPanelOpen(true);
+    setError("");
+    openTurn.current = { user: false, assistant: false };
+    setMessages((list) => [...list, { id: ++messageId.current, role: "user", text }]);
+    const session = sessionRef.current;
+    if (session?.ready && session.socket.readyState === WebSocket.OPEN) deliverText(session, text);
+    else {
+      pendingRef.current.push(text);
+      if (!session) void connect("text");
+    }
+  }, [connect, deliverText]);
+
+  /** The orb: starts a voice conversation, or turns the mic on and off inside the current one. */
+  const toggleVoice = useCallback(() => {
+    const session = sessionRef.current;
+    setPanelOpen(true);
+    if (session) {
+      if (session.mic) dropMic(session);
+      else {
+        setError("");
+        attachMic(session).catch((reason: unknown) => {
+          const name = reason instanceof DOMException ? reason.name : "";
+          setError(name === "NotAllowedError" ? "Izinkan akses mikrofon untuk berbicara, atau ketik saja pertanyaanmu." : reason instanceof Error ? reason.message : "Mikrofon tidak bisa dipakai.");
+        });
+      }
     } else if (connectRef.current) {
       cancelConnectRef.current = true;
       connectAbortRef.current?.abort();
       setStatus("idle");
       setError("");
     } else {
-      void startSession();
+      void connect("voice");
     }
-  }, [closeSession, startSession]);
+  }, [attachMic, connect, dropMic]);
+
+  const endConversation = useCallback(() => {
+    if (connectRef.current) {
+      cancelConnectRef.current = true;
+      connectAbortRef.current?.abort();
+    }
+    closeSession("idle");
+    setMessages([]);
+    setError("");
+    setPanelOpen(false);
+  }, [closeSession]);
+
+  const toggleSpeaker = useCallback(() => {
+    const session = sessionRef.current;
+    const next = !muted;
+    setMuted(next);
+    if (!session) return;
+    session.muted = next;
+    if (next) {
+      stopPlayback(session);
+      if (session.ready) setStatus(idleStatus(session));
+    } else void session.audio.resume().catch(() => undefined);
+  }, [muted]);
+
+  // A question typed on the landing page opens the chat and goes straight to the assistant.
+  // Deferred a tick so React's development double-mount only sends it once.
+  const askedRef = useRef(false);
+  useEffect(() => {
+    if (!initialQuestion || askedRef.current) return;
+    const timer = setTimeout(() => {
+      askedRef.current = true;
+      sendText(initialQuestion);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [initialQuestion, sendText]);
 
   useEffect(() => {
     const root = toolRoot.current;
@@ -821,44 +976,92 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
   const readLevel = useCallback(() => {
     const session = sessionRef.current;
     if (!session) return 0;
-    return Math.max(levelOf(session.inputMeter), levelOf(session.outputMeter));
+    return Math.max(session.mic ? levelOf(session.mic.inputMeter) : 0, levelOf(session.outputMeter));
   }, []);
 
-  const active = status !== "idle" && status !== "error";
-  const statusLabel = status === "connecting" ? "Menghubungkan" : status === "listening" ? "Mendengarkan" : status === "thinking" ? "Sebentar ya" : status === "speaking" ? "Labai sedang bicara" : "Asisten suara";
-  const speech = error || assistantText || (status === "connecting" ? "Menyiapkan suara…" : status === "error" ? "Asisten suara belum tersedia." : "Silakan bicara. Aku mengikuti alat yang sedang terbuka.");
+  const connected = status !== "idle" && status !== "error";
+  const statusLabel = {
+    idle: "Ketik atau bicara",
+    connecting: "Menghubungkan",
+    ready: "Siap",
+    listening: "Mendengarkan",
+    thinking: "Sebentar ya",
+    speaking: muted ? "Menjawab" : "Sedang bicara",
+    error: "Ada kendala",
+  }[status];
 
   return (
-    <div ref={dockRootRef} className="svg-assistant" data-active={active} data-status={status} data-speaking={status === "speaking"} data-error={status === "error"}>
-      {(active || error) && (
-        <section className="svg-assistant-bubble" aria-live="polite" aria-label="Percakapan dengan asisten suara">
+    <div ref={dockRootRef} className="svg-assistant" data-active={panelOpen || connected} data-status={status} data-speaking={status === "speaking"} data-error={status === "error"}>
+      {panelOpen && (
+        <section className="svg-assistant-bubble svg-assistant-chat" aria-label="Percakapan dengan Labscape AI">
           <div className="svg-assistant-bubble-top">
             <span className="svg-assistant-orb" aria-hidden="true"><i /><i /><i /></span>
-            <span>{status === "error" ? "Ada kendala" : statusLabel}</span>
+            <span>{statusLabel}</span>
             <span className="svg-assistant-tool">{toolLabel}</span>
+            <button type="button" className="svg-assistant-icon" onClick={toggleSpeaker} aria-pressed={!muted} aria-label={muted ? "Bacakan jawaban" : "Matikan suara jawaban"} title={muted ? "Bacakan jawaban" : "Matikan suara jawaban"}>
+              {muted ? <VolumeX size={15} aria-hidden="true" /> : <Volume2 size={15} aria-hidden="true" />}
+            </button>
+            <button type="button" className="svg-assistant-icon" onClick={endConversation} aria-label="Tutup dan akhiri percakapan" title="Tutup dan akhiri percakapan">
+              <X size={15} aria-hidden="true" />
+            </button>
           </div>
-          <p>{speech}</p>
-          {userText && status !== "speaking" && <span className="svg-assistant-user-text">Kamu: {userText}</span>}
+          <div ref={listRef} className="svg-assistant-log" aria-live="polite">
+            {messages.length === 0 && !error && (
+              <p className="svg-assistant-empty">Tanya apa saja tentang {toolLabel}. Ketik di bawah, atau tekan orb untuk bicara.</p>
+            )}
+            {messages.map((message) => (
+              <p key={message.id} className="svg-assistant-message" data-role={message.role}>{message.text}</p>
+            ))}
+            {status === "thinking" && messages.at(-1)?.role === "user" && (
+              <p className="svg-assistant-message svg-assistant-typing" data-role="assistant" aria-label="Sedang menyiapkan jawaban"><i /><i /><i /></p>
+            )}
+            {error && <p className="svg-assistant-error">{error}</p>}
+          </div>
+          <form
+            className="svg-assistant-compose"
+            onSubmit={(event) => {
+              event.preventDefault();
+              sendText(draft);
+              setDraft("");
+            }}
+          >
+            <button type="button" className="svg-assistant-icon" data-on={micOn} onClick={toggleVoice} aria-pressed={micOn} aria-label={micOn ? "Matikan mikrofon" : "Bicara"} title={micOn ? "Matikan mikrofon" : "Bicara"}>
+              {micOn ? <Mic size={16} aria-hidden="true" /> : <MicOff size={16} aria-hidden="true" />}
+            </button>
+            <label className="svg-assistant-sr" htmlFor="svg-assistant-input">Pesan untuk Labscape AI</label>
+            <input
+              ref={inputRef}
+              id="svg-assistant-input"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder={micOn ? "Bicara, atau ketik di sini…" : `Tanya tentang ${toolLabel}…`}
+              autoComplete="off"
+              maxLength={500}
+            />
+            <button type="submit" className="svg-assistant-send" disabled={!draft.trim()} aria-label="Kirim">
+              <ArrowUp size={16} aria-hidden="true" />
+            </button>
+          </form>
         </section>
       )}
       <div className="svg-assistant-dock">
-        {!active && (
-          <span className="svg-assistant-hint" aria-hidden="true" onClick={toggleSession}>
+        {!panelOpen && (
+          <button type="button" className="svg-assistant-hint" onClick={() => { setPanelOpen(true); setTimeout(() => inputRef.current?.focus(), 0); }}>
             Labscape AI
-          </span>
+          </button>
         )}
         <button
           ref={dockHandleRef}
           className="svg-assistant-orb-button"
           type="button"
-          onClick={() => { if (!consumeDrag()) toggleSession(); }}
+          onClick={() => { if (!consumeDrag()) toggleVoice(); }}
           onPointerDown={onDockPointerDown}
           onKeyDown={onDockKeyDown}
           onDoubleClick={resetDock}
-          aria-label={active ? "Akhiri percakapan suara" : "Tanya alat ini dengan suara"}
+          aria-label={micOn ? "Matikan mikrofon" : "Bicara dengan Labscape AI"}
           aria-describedby="svg-assistant-drag-hint"
-          aria-pressed={active}
-          title={active ? "Akhiri percakapan · seret untuk memindahkan" : "Tanya alat ini · seret untuk memindahkan"}
+          aria-pressed={micOn}
+          title={micOn ? "Matikan mikrofon · seret untuk memindahkan" : "Bicara · seret untuk memindahkan"}
         >
           <VoiceOrb status={status} levelOf={readLevel} />
         </button>

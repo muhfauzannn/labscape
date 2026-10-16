@@ -1,4 +1,4 @@
-module labai/apps/api
+module labscape/apps/api
 
 go 1.27.0
 
