@@ -6,9 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "check:styles": "node scripts/check-styles.mjs"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.3.1",
+    "@radix-ui/react-navigation-menu": "^1.4.1",
+    "@radix-ui/react-slot": "^1.5.0",
+    "@radix-ui/react-tabs": "^1.2.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.57.0",
     "next": "16.4.1",
     "react": "19.3.0",
     "react-dom": "19.3.0"
