@@ -42,4 +42,16 @@ if (Date.now() >= deadline) throw new Error(`Dokploy deployment ${deploymentId} 
 
 const service = await request(`compose.one?composeId=${encodeURIComponent(composeId)}`);
 if (service.composeStatus !== "done") throw new Error(`Compose status is ${service.composeStatus}`);
-console.log("Dokploy Compose deployment completed");
+
+const healthDeadline = Date.now() + 2 * 60 * 1000;
+while (Date.now() < healthDeadline) {
+  const containers = await request(`docker.getContainersByAppNameMatch?appName=${encodeURIComponent(service.appName)}&appType=docker-compose`);
+  const web = containers.find((item) => item.name.startsWith(`${service.appName}-web-`));
+  const api = containers.find((item) => item.name.startsWith(`${service.appName}-api-`));
+  if (web?.status?.includes("(healthy)") && api?.status?.includes("(healthy)")) {
+    console.log("Dokploy Compose deployment completed; web and API are healthy");
+    process.exit(0);
+  }
+  await new Promise((resolve) => setTimeout(resolve, 10000));
+}
+throw new Error("Web or API did not become healthy within two minutes");
