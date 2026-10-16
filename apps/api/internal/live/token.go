@@ -43,7 +43,14 @@ type tokenRequest struct {
 		} `json:"generationConfig"`
 		SessionResumption struct{} `json:"sessionResumption"`
 	} `json:"bidiGenerateContentSetup"`
+	// FieldMask names the setup fields the token locks. Without it Gemini takes the whole setup from the
+	// token and silently ignores the browser's: its system instruction, tools and transcription settings.
+	FieldMask string `json:"fieldMask"`
 }
+
+// lockedFields keeps the model, audio-only replies and session resumption fixed by the server; everything else
+// (instructions, tool declarations, transcription) comes from the browser's setup message.
+const lockedFields = "model,generationConfig.responseModalities,sessionResumption"
 
 func NewTokenIssuer(apiKey, model string, client *http.Client) *TokenIssuer {
 	model = strings.TrimSpace(model)
@@ -99,6 +106,7 @@ func (i *TokenIssuer) CreateToken(ctx context.Context) (Token, error) {
 	}
 	requestBody.BidiGenerateContentSetup.Model = "models/" + i.model
 	requestBody.BidiGenerateContentSetup.GenerationConfig.ResponseModalities = []string{"AUDIO"}
+	requestBody.FieldMask = lockedFields
 
 	encoded, err := json.Marshal(requestBody)
 	if err != nil {

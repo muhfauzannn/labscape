@@ -37,6 +37,7 @@ func TestCreateTokenUsesSingleConstrainedAudioSession(t *testing.T) {
 				} `json:"generationConfig"`
 				SessionResumption json.RawMessage `json:"sessionResumption"`
 			} `json:"bidiGenerateContentSetup"`
+			FieldMask string `json:"fieldMask"`
 		}
 		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
 			t.Errorf("decode token request: %v", err)
@@ -47,6 +48,9 @@ func TestCreateTokenUsesSingleConstrainedAudioSession(t *testing.T) {
 		}
 		if len(body.Setup.GenerationConfig.ResponseModalities) != 1 || body.Setup.GenerationConfig.ResponseModalities[0] != "AUDIO" {
 			t.Errorf("token does not require audio output: %+v", body.Setup.GenerationConfig)
+		}
+		if body.FieldMask != "model,generationConfig.responseModalities,sessionResumption" {
+			t.Errorf("fieldMask = %q; the token must lock only the model and modality so the browser's setup applies", body.FieldMask)
 		}
 		if string(body.Setup.SessionResumption) != "{}" {
 			t.Errorf("token does not enable session resumption: %s", body.Setup.SessionResumption)
