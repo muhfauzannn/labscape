@@ -6,27 +6,27 @@ import { Check, ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { LiveAssistant } from "./live-assistant";
 
 const figures = [
-  { id: "microscope", label: "Light path" },
   { id: "computer", label: "Computer" },
   { id: "rocket", label: "Rocket" },
   { id: "engine", label: "Engine" },
   { id: "microscope-lab", label: "Microscope" },
   { id: "typewriter", label: "Typewriter" },
+  { id: "printer", label: "3D printer" },
 ] as const;
 
 type FigureId = (typeof figures)[number]["id"];
 
 const tools = {
-  microscope: dynamic(() => import("./figures/microscope/figure").then((m) => m.MicroscopeFigure)),
   computer: dynamic(() => import("./figures/computer/art").then((m) => m.ComputerArt)),
   rocket: dynamic(() => import("./figures/rocket/art").then((m) => m.RocketArt)),
   engine: dynamic(() => import("./figures/engine/art").then((m) => m.EngineArt)),
   "microscope-lab": dynamic(() => import("./figures/microscope-lab/art").then((m) => m.MicroscopeArt)),
+  printer: dynamic(() => import("./figures/printer/figure").then((m) => m.PrinterFigure)),
   typewriter: dynamic(() => import("./figures/typewriter/figure").then((m) => m.TypewriterFigure)),
 };
 
 export function SvgTools() {
-  const [selected, setSelected] = useState<FigureId>("microscope");
+  const [selected, setSelected] = useState<FigureId>("computer");
   const [controlsOpen, setControlsOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const figureRootRef = useRef<HTMLDivElement>(null);

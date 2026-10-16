@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"labai/apps/api/internal/live"
@@ -31,6 +32,15 @@ func TestLiveTokenRouteChecksOriginAndLimitsRequests(t *testing.T) {
 	server.Handler.ServeHTTP(blockedResponse, blocked)
 	if blockedResponse.Code != http.StatusForbidden || issuer.calls != 0 {
 		t.Fatalf("untrusted origin response = %d, issuer calls = %d", blockedResponse.Code, issuer.calls)
+	}
+
+	withBody := httptest.NewRequest(http.MethodPost, "/api/live/token", strings.NewReader("{}"))
+	withBody.Header.Set("Origin", "https://labai.example")
+	withBody.RemoteAddr = "203.0.113.7:1234"
+	bodyResponse := httptest.NewRecorder()
+	server.Handler.ServeHTTP(bodyResponse, withBody)
+	if bodyResponse.Code != http.StatusBadRequest || issuer.calls != 0 {
+		t.Fatalf("request body response = %d, issuer calls = %d", bodyResponse.Code, issuer.calls)
 	}
 
 	for attempt := 0; attempt < tokenLimit; attempt++ {

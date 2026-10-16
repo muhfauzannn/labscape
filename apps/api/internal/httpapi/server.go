@@ -95,6 +95,10 @@ func liveTokenHandler(issuer tokenIssuer, allowedOrigins []string, trustProxy bo
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
+		if r.ContentLength != 0 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unexpected_body", "message": "This request does not accept a body."})
+			return
+		}
 		origin := strings.TrimSuffix(strings.TrimSpace(r.Header.Get("Origin")), "/")
 		if _, ok := allowed[origin]; origin == "" || !ok {
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "origin_not_allowed", "message": "This page cannot start a voice session."})

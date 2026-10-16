@@ -2,10 +2,10 @@
 @import "../../components/iso/turn.css";
 @import "./figures/computer/computer.css";
 @import "./figures/engine/engine.css";
-@import "./figures/microscope/microscope.css";
 @import "./figures/microscope-lab/lab.css";
 @import "./figures/rocket/rocket.css";
 @import "./figures/typewriter/typewriter.css";
+@import "./figures/printer/printer.css";
 
 .svg-tools {
   --font-geist-sans: var(--font-sans), Arial, sans-serif;

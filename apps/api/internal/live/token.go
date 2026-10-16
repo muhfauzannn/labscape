@@ -43,9 +43,11 @@ type tokenRequest struct {
 }
 
 func NewTokenIssuer(apiKey, model string, client *http.Client) *TokenIssuer {
+	model = strings.TrimSpace(model)
 	if model == "" {
 		model = defaultModel
 	}
+	model = strings.TrimPrefix(model, "models/")
 	if client == nil {
 		client = &http.Client{Timeout: 12 * time.Second}
 	}

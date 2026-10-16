@@ -53,6 +53,7 @@ const toolDescriptions: Record<string, string> = {
   rocket: "A rocket launch demo with selectable parts, engine power, and live flight readings.",
   engine: "A two-cylinder engine demo with moving pistons, valves, engine settings, and live readings.",
   "microscope-lab": "A laboratory microscope with selectable parts, lenses, focus, light, and a sample view.",
+  typewriter: "A mechanical typewriter demo. Typing moves the keys and typebars and updates the line and column on the paper.",
 };
 
 const toolFunctions = [
@@ -78,6 +79,18 @@ const toolFunctions = [
       properties: {
         label: { type: "STRING", description: "The control label shown next to the slider." },
         value: { type: "NUMBER", description: "The requested value." },
+      },
+      required: ["label", "value"],
+    },
+  },
+  {
+    name: "set_toggle",
+    description: "Turn one existing checkbox in the active tool on or off. Use only when the user asks you to change the tool.",
+    parameters: {
+      type: "OBJECT",
+      properties: {
+        label: { type: "STRING", description: "The checkbox label shown in the active tool." },
+        value: { type: "BOOLEAN", description: "Whether the checkbox should be on." },
       },
       required: ["label", "value"],
     },
@@ -132,7 +145,7 @@ function readToolState(root: HTMLDivElement | null, toolId: string, toolLabel: s
       }),
   );
   const summaries = [...root.querySelectorAll<HTMLElement>(
-    ".terminal-card-bottom, .ms-live-indicator, .ml-inspector, .ml-magnification, .ml-field-readouts, .ml-focus-visual",
+    ".terminal-card-bottom, .ms-live-indicator, .ml-inspector, .ml-magnification, .ml-field-readouts, .ml-focus-visual, .tw-readout, .tw-note",
   )]
     .map((element) => element.innerText.replace(/\s+/g, " ").trim().slice(0, 700))
     .filter(Boolean)
@@ -154,8 +167,17 @@ function readToolState(root: HTMLDivElement | null, toolId: string, toolLabel: s
       ...(input.type === "range" ? { min: Number(input.min), max: Number(input.max), step: Number(input.step || 1) } : {}),
     }))
     .filter((input) => input.name);
+  const scene = root.querySelector<HTMLElement>(".iso, .tw");
+  const flagNames = ["data-theme", "data-mode", "data-cutaway", "data-focus", "data-isolated", "data-highlight", "data-phase", "data-glass", "data-isolate"];
+  const flags = Object.fromEntries(flagNames.flatMap((name) => {
+    const value = scene?.getAttribute(name);
+    return value === null || value === undefined ? [] : [[name.slice(5), value || true]];
+  }));
+  const activeControls = [...root.querySelectorAll<HTMLElement>(".tw-controls-row button.button--primary")]
+    .map(cleanName)
+    .filter(Boolean);
 
-  return { tool, readings, summaries, selected, values, availableButtons: controls };
+  return { tool, readings, summaries, selected, activeControls, flags, values, availableButtons: controls };
 }
 
 function appendTranscript(previous: string, next: string) {
@@ -325,6 +347,22 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
       return { ok: true, action: controlLabel(input), value: input.value, state: stateSnapshot() };
     }
 
+    if (call.name === "set_toggle") {
+      const input = matchLabel(
+        label,
+        [...root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')],
+        (element) => controlLabel(element as HTMLInputElement),
+      ) as HTMLInputElement | null;
+      const value = typeof call.args?.value === "boolean" ? call.args.value : null;
+      if (!input || value === null) return { ok: false, message: "That checkbox could not be matched." };
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "checked")?.set;
+      setter?.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 90));
+      return { ok: true, action: controlLabel(input), value: input.checked, state: stateSnapshot() };
+    }
+
     return { ok: false, message: "This tool action is not available." };
   }, [stateSnapshot]);
 
@@ -425,7 +463,7 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
             inputAudioTranscription: { languageCodes: ["id-ID", "en-US"] },
             outputAudioTranscription: { languageCodes: ["id-ID", "en-US"] },
             systemInstruction: {
-              parts: [{ text: `Kamu adalah asisten suara untuk demo alat Labai. Jawab singkat, santai, dan gunakan bahasa pengguna; utamakan Bahasa Indonesia. Kamu memahami satu alat aktif berikut beserta kondisinya. Jika pertanyaan merujuk pada isi alat yang berubah, pilihan aktif, atau angka saat ini, panggil inspect_tool_state sebelum menjawab. Aksi kontrol hanya dilakukan jika pengguna memintanya dengan jelas. Gunakan label tombol dan slider persis seperti yang tersedia. Jangan mengaku mengubah sesuatu jika aksi gagal. Jelaskan alat dengan bahasa mudah, bukan jargon teknis kecuali pengguna memintanya.\n\nALAT DAN KONDISI AWAL:\n${JSON.stringify({ tool: { id: current.id, name: current.label, description: toolDescriptions[current.id] }, state: initialState })}` }],
+              parts: [{ text: `Kamu adalah asisten suara untuk demo alat Labai. Jawab singkat, santai, dan gunakan bahasa pengguna; utamakan Bahasa Indonesia. Kamu memahami satu alat aktif berikut beserta kondisinya. Jika pertanyaan merujuk pada isi alat yang berubah, pilihan aktif, atau angka saat ini, panggil inspect_tool_state sebelum menjawab. Aksi kontrol hanya dilakukan jika pengguna memintanya dengan jelas. Gunakan label tombol, slider, dan sakelar persis seperti yang tersedia. Jangan mengaku mengubah sesuatu jika aksi gagal. Jelaskan alat dengan bahasa mudah, bukan jargon teknis kecuali pengguna memintanya.\n\nALAT DAN KONDISI AWAL:\n${JSON.stringify({ tool: { id: current.id, name: current.label, description: toolDescriptions[current.id] }, state: initialState })}` }],
             },
             tools: [{ functionDeclarations: toolFunctions }],
           },
@@ -554,9 +592,11 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
     };
     root.addEventListener("click", onToolInteraction, true);
     root.addEventListener("change", onToolInteraction, true);
+    root.addEventListener("keydown", onToolInteraction, true);
     return () => {
       root.removeEventListener("click", onToolInteraction, true);
       root.removeEventListener("change", onToolInteraction, true);
+      root.removeEventListener("keydown", onToolInteraction, true);
     };
   }, [toolId, sendState, toolRoot]);
 
