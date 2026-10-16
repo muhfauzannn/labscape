@@ -17,8 +17,5 @@
     "api:fmt": "go -C apps/api fmt ./...",
     "api:build": "go -C apps/api build ./...",
     "api:vet": "go -C apps/api vet ./..."
-  },
-  "dependencies": {
-    "orb-ui": "^0.10.0"
   }
 }

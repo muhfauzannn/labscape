@@ -1,7 +1,7 @@
 "use client";
 
 import Orb from "@/components/react-bits/Orb";
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 
 type AssistantStatus = "idle" | "connecting" | "listening" | "thinking" | "speaking" | "error";
 type ToolScopeRef = RefObject<HTMLDivElement | null>;
@@ -46,6 +46,8 @@ type LiveMessage = {
   toolCall?: { functionCalls?: ControlCall[] };
   goAway?: unknown;
 };
+
+const liveText = new TextDecoder();
 
 const liveEndpoint =
   "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained";
@@ -183,12 +185,19 @@ function readToolState(root: HTMLDivElement | null, toolId: string, toolLabel: s
   return { tool, readings, summaries, selected, activeControls, flags, values, availableButtons: controls };
 }
 
+/**
+ * Gemini streams transcripts in small pieces, and the space between two words usually leads the next
+ * piece (" pertanyaan"), so pieces are joined as they come, never trimmed. A piece that repeats the
+ * whole text so far (a cumulative update) replaces it, and a long piece sent twice is not doubled.
+ */
 function appendTranscript(previous: string, next: string) {
-  const text = next.trim();
-  if (!text) return previous;
-  if (text.startsWith(previous)) return text;
-  if (previous.endsWith(text)) return previous;
-  return `${previous}${text}`.replace(/\s+/g, " ").trim();
+  const piece = next.replace(/\s+/g, " ");
+  const core = piece.trim();
+  const before = previous.trim();
+  if (!core) return previous && !previous.endsWith(" ") ? `${previous} ` : previous;
+  if (before.length >= 6 && core.length > before.length && core.startsWith(before)) return core;
+  if (core.length >= 12 && before.endsWith(core)) return previous;
+  return `${previous}${piece}`.replace(/ {2,}/g, " ").trimStart();
 }
 
 function base64(bytes: ArrayBuffer) {
@@ -222,7 +231,7 @@ function levelOf(meter: AnalyserNode) {
 }
 
 type OrbLook = { speed: number; size: number; glow: number; hover: boolean; colors: string[] };
-const ORB_COLORS = ["#3f95c4", "#7db56b", "#174a66"];
+const ORB_COLORS = ["#2a86c0", "#5fae4f", "#0f3a55"];
 const ORB_STYLE = { width: "100%", height: "100%" };
 const ORB_ERROR = ["#e0645a", "#f09a6b", "#7a1f1a"];
 
@@ -233,7 +242,7 @@ function orbLook(status: AssistantStatus, level: number): OrbLook {
     case "thinking": return { speed: 2.8, size: 0.88, glow: 1.3, hover: true, colors: ORB_COLORS };
     case "speaking": return { speed: 1.6 + level * 3, size: 0.92 + level * 0.28, glow: 1.3 + level * 1.6, hover: true, colors: ORB_COLORS };
     case "error": return { speed: 0.6, size: 0.86, glow: 1, hover: false, colors: ORB_ERROR };
-    default: return { speed: 0.7, size: 0.86, glow: 1, hover: false, colors: ORB_COLORS };
+    default: return { speed: 0.7, size: 0.88, glow: 1.4, hover: false, colors: ORB_COLORS };
   }
 }
 
@@ -293,6 +302,130 @@ function matchLabel(query: string, candidates: HTMLElement[], getName = cleanNam
   return matches.length === 1 ? matches[0] : null;
 }
 
+const DOCK_KEY = "labai.assistant.position";
+const DRAG_SLOP = 5;
+const EDGE = 8;
+
+type DockPlace = { x: number; y: number };
+
+/**
+ * Lets the floating assistant be dragged anywhere on screen. The position is kept per browser,
+ * clamped to the viewport, and the bubble and label flip to whichever side has room.
+ */
+function useDraggableDock() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const handleRef = useRef<HTMLButtonElement>(null);
+  const dragged = useRef(false);
+
+  const place = useCallback((next: DockPlace | null, save = false) => {
+    const root = rootRef.current;
+    const handle = handleRef.current;
+    if (!root || !handle) return;
+    if (!next) {
+      root.style.removeProperty("left");
+      root.style.removeProperty("top");
+      delete root.dataset.placed;
+    } else {
+      // Clamp by the orb itself so the label can never push it off screen.
+      const orb = handle.getBoundingClientRect();
+      const box = root.getBoundingClientRect();
+      const offsetX = orb.left - box.left;
+      const offsetY = orb.top - box.top;
+      const x = Math.min(Math.max(next.x, EDGE), window.innerWidth - orb.width - EDGE);
+      const y = Math.min(Math.max(next.y, EDGE), window.innerHeight - orb.height - EDGE);
+      root.dataset.placed = "";
+      root.style.left = `${x - offsetX}px`;
+      root.style.top = `${y - offsetY}px`;
+      next = { x, y };
+    }
+    const orb = handle.getBoundingClientRect();
+    root.dataset.vertical = orb.top + orb.height / 2 < window.innerHeight * 0.45 ? "top" : "bottom";
+    root.dataset.horizontal = orb.left + orb.width / 2 < window.innerWidth * 0.5 ? "left" : "right";
+    if (save) {
+      try {
+        if (next) localStorage.setItem(DOCK_KEY, JSON.stringify(next));
+        else localStorage.removeItem(DOCK_KEY);
+      } catch {
+        // Storage can be unavailable (private mode); the position just won't persist.
+      }
+    }
+  }, []);
+
+  const current = useCallback((): DockPlace | null => {
+    const handle = handleRef.current;
+    if (!handle || rootRef.current?.dataset.placed === undefined) return null;
+    const orb = handle.getBoundingClientRect();
+    return { x: orb.left, y: orb.top };
+  }, []);
+
+  useEffect(() => {
+    let saved: DockPlace | null = null;
+    try {
+      const raw = localStorage.getItem(DOCK_KEY);
+      if (raw) saved = JSON.parse(raw) as DockPlace;
+    } catch {
+      saved = null;
+    }
+    place(saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) ? saved : null);
+    const onResize = () => place(current());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [current, place]);
+
+  const onPointerDown = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return;
+    const handle = event.currentTarget;
+    const start = handle.getBoundingClientRect();
+    const fromX = event.clientX;
+    const fromY = event.clientY;
+    let moving = false;
+    dragged.current = false;
+    // Capture on press so a fast flick that leaves the orb still drags it.
+    handle.setPointerCapture(event.pointerId);
+
+    const move = (moveEvent: PointerEvent) => {
+      const dx = moveEvent.clientX - fromX;
+      const dy = moveEvent.clientY - fromY;
+      if (!moving && Math.hypot(dx, dy) < DRAG_SLOP) return;
+      if (!moving) {
+        moving = true;
+        dragged.current = true;
+        rootRef.current?.setAttribute("data-dragging", "");
+      }
+      place({ x: start.left + dx, y: start.top + dy });
+    };
+    const end = () => {
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", end);
+      handle.removeEventListener("pointercancel", end);
+      rootRef.current?.removeAttribute("data-dragging");
+      if (moving) place(current(), true);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", end);
+    handle.addEventListener("pointercancel", end);
+  }, [current, place]);
+
+  /** A drag ends with a click on the same button; swallow it so dragging never toggles the session. */
+  const consumeDrag = useCallback(() => {
+    const was = dragged.current;
+    dragged.current = false;
+    return was;
+  }, []);
+
+  const onKeyDown = useCallback((event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
+    if (!step || !event.shiftKey) return;
+    event.preventDefault();
+    const orb = event.currentTarget.getBoundingClientRect();
+    place({ x: orb.left + step[0] * 32, y: orb.top + step[1] * 32 }, true);
+  }, [place]);
+
+  const reset = useCallback(() => place(null, true), [place]);
+
+  return { rootRef, handleRef, onPointerDown, onKeyDown, consumeDrag, reset };
+}
+
 export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
   const [status, setStatus] = useState<AssistantStatus>("idle");
   const [assistantText, setAssistantText] = useState("");
@@ -303,6 +436,7 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
   const connectRef = useRef(false);
   const cancelConnectRef = useRef(false);
   const connectAbortRef = useRef<AbortController | null>(null);
+  const { rootRef: dockRootRef, handleRef: dockHandleRef, onPointerDown: onDockPointerDown, onKeyDown: onDockKeyDown, consumeDrag, reset: resetDock } = useDraggableDock();
 
 
   useEffect(() => {
@@ -488,6 +622,8 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
         return;
       }
       socket = new WebSocket(`${liveEndpoint}?access_token=${encodeURIComponent(credentials.token)}`);
+      // Gemini Live sends its JSON messages as binary frames.
+      socket.binaryType = "arraybuffer";
 
       const session: LiveSession = {
         socket,
@@ -540,7 +676,8 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
       socket.onmessage = (event) => {
         let message: LiveMessage;
         try {
-          message = JSON.parse(event.data) as LiveMessage;
+          const text = typeof event.data === "string" ? event.data : liveText.decode(event.data as ArrayBuffer);
+          message = JSON.parse(text) as LiveMessage;
         } catch {
           return;
         }
@@ -603,11 +740,14 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
         setError("Sambungan suara terputus. Coba lagi.");
         closeSession("error");
       };
-      socket.onclose = () => {
+      socket.onclose = (event) => {
         if (sessionRef.current !== session || session.intentionalClose) return;
         cleanup(session);
         sessionRef.current = null;
-        setError("Sambungan suara berakhir. Mulai lagi untuk melanjutkan.");
+        if (event.reason) console.warn(`Gemini Live closed (${event.code}): ${event.reason}`);
+        setError(session.ready
+          ? "Sambungan suara berakhir. Mulai lagi untuk melanjutkan."
+          : `Gemini menolak sambungan${event.reason ? `: ${event.reason}` : ` (kode ${event.code})`}.`);
         setStatus("error");
       };
     } catch (reason) {
@@ -689,7 +829,7 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
   const speech = error || assistantText || (status === "connecting" ? "Menyiapkan suara…" : status === "error" ? "Asisten suara belum tersedia." : "Silakan bicara. Aku mengikuti alat yang sedang terbuka.");
 
   return (
-    <div className="svg-assistant" data-active={active} data-status={status} data-speaking={status === "speaking"} data-error={status === "error"}>
+    <div ref={dockRootRef} className="svg-assistant" data-active={active} data-status={status} data-speaking={status === "speaking"} data-error={status === "error"}>
       {(active || error) && (
         <section className="svg-assistant-bubble" aria-live="polite" aria-label="Percakapan dengan asisten suara">
           <div className="svg-assistant-bubble-top">
@@ -704,21 +844,27 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
       <div className="svg-assistant-dock">
         {!active && (
           <span className="svg-assistant-hint" aria-hidden="true" onClick={toggleSession}>
-            Tanya Labai
+            Labscape AI
           </span>
         )}
         <button
+          ref={dockHandleRef}
           className="svg-assistant-orb-button"
           type="button"
-          onClick={toggleSession}
+          onClick={() => { if (!consumeDrag()) toggleSession(); }}
+          onPointerDown={onDockPointerDown}
+          onKeyDown={onDockKeyDown}
+          onDoubleClick={resetDock}
           aria-label={active ? "Akhiri percakapan suara" : "Tanya alat ini dengan suara"}
+          aria-describedby="svg-assistant-drag-hint"
           aria-pressed={active}
-          title={active ? "Akhiri percakapan" : "Tanya alat ini"}
+          title={active ? "Akhiri percakapan · seret untuk memindahkan" : "Tanya alat ini · seret untuk memindahkan"}
         >
           <VoiceOrb status={status} levelOf={readLevel} />
         </button>
       </div>
       <span className="svg-assistant-sr" role="status">{error}</span>
+      <span className="svg-assistant-sr" id="svg-assistant-drag-hint">Seret, atau tekan Shift dan tombol panah, untuk memindahkan. Klik dua kali untuk mengembalikan ke pojok.</span>
     </div>
   );
 }

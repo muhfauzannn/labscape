@@ -763,14 +763,34 @@
 
 .svg-assistant { position: fixed; z-index: 61; right: max(24px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: flex-end; }
 .svg-assistant-dock { display: flex; align-items: center; gap: 10px; }
-.svg-assistant-orb-ui { border-radius: 50%; filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--sky-ink) 35%, transparent)); transition: transform var(--duration-fast) var(--ease); }
-.svg-assistant-orb-ui:active { transform: scale(.95); }
-.svg-assistant-dock { position: relative; }
-.svg-assistant .svg-assistant-launch { background: radial-gradient(circle at 34% 28%, #eaf7ff 0, #6fb3d8 22%, #206487 62%, #40663a 100%) !important; box-shadow: inset 0 -3px 8px #0003; }
-.svg-assistant[data-active="false"] .svg-assistant-orb-ui { position: relative; }
-.svg-assistant[data-active="false"] .svg-assistant-orb-ui::after { content: ""; position: absolute; inset: 6px; border: 1.5px solid var(--sky-ink); border-radius: 50%; opacity: 0; pointer-events: none; animation: svg-assistant-halo 2.6s ease-out infinite; }
-@keyframes svg-assistant-halo { 0% { opacity: .45; transform: scale(.9); } 100% { opacity: 0; transform: scale(1.35); } }
-.svg-assistant-orb-ui :focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: 50%; }
+.svg-assistant[data-placed] { right: auto; bottom: auto; }
+.svg-assistant[data-dragging] { user-select: none; -webkit-user-select: none; }
+.svg-assistant[data-dragging] .svg-assistant-orb-button { cursor: grabbing; transform: scale(1.06); box-shadow: 0 18px 40px -12px color-mix(in srgb, var(--sky-ink) 55%, transparent), var(--shadow-control); }
+.svg-assistant[data-horizontal="left"] { align-items: flex-start; }
+.svg-assistant[data-horizontal="left"] .svg-assistant-dock { flex-direction: row-reverse; }
+.svg-assistant[data-horizontal="left"] .svg-assistant-hint { transform: translateX(-6px); }
+.svg-assistant[data-horizontal="left"] .svg-assistant-bubble { right: auto; left: 0; border-radius: 20px 20px 20px 8px; transform-origin: left bottom; }
+.svg-assistant[data-vertical="top"] .svg-assistant-bubble { bottom: auto; top: calc(100% + 12px); border-radius: 20px 8px 20px 20px; transform-origin: right top; }
+.svg-assistant[data-vertical="top"][data-horizontal="left"] .svg-assistant-bubble { border-radius: 8px 20px 20px 20px; transform-origin: left top; }
+.svg-assistant-orb-button {
+  position: relative;
+  touch-action: none;
+  width: 72px;
+  height: 72px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 12px 28px -12px color-mix(in srgb, var(--sky-ink) 45%, transparent), var(--shadow-control);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
+}
+.svg-assistant-orb-button:active { transform: scale(.95); }
+.svg-assistant-orb-button:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.svg-assistant-orb-button[aria-pressed="true"] { border-color: color-mix(in srgb, var(--sky-ink) 30%, var(--border)); box-shadow: 0 14px 34px -10px color-mix(in srgb, var(--sky-ink) 60%, transparent), var(--shadow-control); }
+.svg-assistant[data-error="true"] .svg-assistant-orb-button { border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
 .svg-assistant-hint {
   padding: 8px 13px;
   border: 1px solid var(--border);
@@ -833,7 +853,7 @@
 @keyframes svg-assistant-cloud { 50% { transform: scale(1.08); } }
 @keyframes svg-assistant-voice { to { transform: scaleY(.55); } }
 @media (hover: hover) and (pointer: fine) {
-  .svg-assistant-orb-ui:hover { transform: scale(1.05); }
+  .svg-assistant-orb-button:hover { transform: scale(1.04); }
   .svg-assistant-hint:hover { border-color: var(--border-strong); }
 }
 
@@ -889,8 +909,7 @@
   .svg-tools-picker-trigger[aria-expanded="true"] > svg { transform: none; }
   .svg-tools-picker-menu,
   .svg-tools-picker-menu[data-open="true"] { transform: none; }
-  .svg-assistant-orb-ui, .svg-assistant-hint { transition: none; animation: none; transform: none; }
-  .svg-assistant-orb-ui::after { animation: none !important; }
+  .svg-assistant-orb-button, .svg-assistant-hint { transition: none; animation: none; transform: none; }
   .svg-assistant-bubble { animation: none; transform: none; }
   .svg-assistant[data-speaking="true"] .svg-assistant-orb,
   .svg-assistant[data-speaking="true"] .svg-assistant-orb i { animation: none; }

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -51,7 +52,7 @@ func NewTokenIssuer(apiKey, model string, client *http.Client) *TokenIssuer {
 	}
 	model = strings.TrimPrefix(model, "models/")
 	if client == nil {
-		client = &http.Client{Timeout: 12 * time.Second}
+		client = defaultClient()
 	}
 
 	return &TokenIssuer{
@@ -60,6 +61,25 @@ func NewTokenIssuer(apiKey, model string, client *http.Client) *TokenIssuer {
 		endpoint: "https://generativelanguage.googleapis.com/v1beta/auth_tokens",
 		client:   client,
 	}
+}
+
+// defaultClient dials Google over IPv4 first. Broken IPv6 routes (VPN tunnels such as WARP)
+// otherwise connect and then hang or reset mid-request, which Go's dual-stack dialer can't recover from.
+func defaultClient() *http.Client {
+	dialer := &net.Dialer{Timeout: 5 * time.Second, KeepAlive: 30 * time.Second}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSHandshakeTimeout = 5 * time.Second
+	transport.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+		if network != "tcp" {
+			return dialer.DialContext(ctx, network, address)
+		}
+		conn, err := dialer.DialContext(ctx, "tcp4", address)
+		if err == nil {
+			return conn, nil
+		}
+		return dialer.DialContext(ctx, "tcp6", address)
+	}
+	return &http.Client{Timeout: 6 * time.Second, Transport: transport}
 }
 
 func (i *TokenIssuer) Configured() bool {
@@ -85,16 +105,24 @@ func (i *TokenIssuer) CreateToken(ctx context.Context) (Token, error) {
 		return Token{}, fmt.Errorf("encode Gemini token request: %w", err)
 	}
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, i.endpoint, bytes.NewReader(encoded))
-	if err != nil {
-		return Token{}, fmt.Errorf("build Gemini token request: %w", err)
-	}
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("x-goog-api-key", i.apiKey)
+	// A network failure gets one retry on a fresh connection; provider errors are returned as they are.
+	// Two 6 s attempts stay inside the HTTP server's 15 s write timeout.
+	var response *http.Response
+	for attempt := 1; ; attempt++ {
+		request, err := http.NewRequestWithContext(ctx, http.MethodPost, i.endpoint, bytes.NewReader(encoded))
+		if err != nil {
+			return Token{}, fmt.Errorf("build Gemini token request: %w", err)
+		}
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("x-goog-api-key", i.apiKey)
 
-	response, err := i.client.Do(request)
-	if err != nil {
-		return Token{}, fmt.Errorf("request Gemini Live token: %w", err)
+		response, err = i.client.Do(request)
+		if err == nil {
+			break
+		}
+		if attempt >= 2 || ctx.Err() != nil {
+			return Token{}, fmt.Errorf("request Gemini Live token: %w", err)
+		}
 	}
 	defer response.Body.Close()
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"testing"
@@ -80,5 +81,43 @@ func TestCreateTokenRequiresAPIKey(t *testing.T) {
 	issuer := NewTokenIssuer("", "", nil)
 	if _, err := issuer.CreateToken(context.Background()); err != ErrNotConfigured {
 		t.Fatalf("CreateToken() error = %v, want %v", err, ErrNotConfigured)
+	}
+}
+
+func TestCreateTokenRetriesOnceAfterNetworkFailure(t *testing.T) {
+	calls := 0
+	client := &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		calls++
+		if calls == 1 {
+			return nil, errors.New("read: no route to host")
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewBufferString(`{"name":"ephemeral-live-token"}`)),
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Request:    request,
+		}, nil
+	})}
+
+	issuer := NewTokenIssuer("secret-key", "", client)
+	token, err := issuer.CreateToken(context.Background())
+	if err != nil {
+		t.Fatalf("CreateToken() error = %v", err)
+	}
+	if calls != 2 || token.Name != "ephemeral-live-token" {
+		t.Fatalf("calls = %d, token = %+v; want one retry then success", calls, token)
+	}
+}
+
+func TestCreateTokenGivesUpAfterSecondNetworkFailure(t *testing.T) {
+	calls := 0
+	client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		calls++
+		return nil, errors.New("context deadline exceeded")
+	})}
+
+	issuer := NewTokenIssuer("secret-key", "", client)
+	if _, err := issuer.CreateToken(context.Background()); err == nil || calls != 2 {
+		t.Fatalf("calls = %d, err = %v; want two attempts and an error", calls, err)
 	}
 }
