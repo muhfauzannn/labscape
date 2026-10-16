@@ -1,34 +1,24 @@
 {
-  "name": "labai",
+  "name": "labai-monorepo",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@11.19.0",
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "typecheck": "tsc --noEmit",
-    "check:styles": "node scripts/check-styles.mjs"
-  },
-  "dependencies": {
-    "@radix-ui/react-dialog": "^1.3.1",
-    "@radix-ui/react-navigation-menu": "^1.4.1",
-    "@radix-ui/react-slot": "^1.5.0",
-    "@radix-ui/react-tabs": "^1.2.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^1.57.0",
-    "next": "16.4.1",
-    "react": "19.3.0",
-    "react-dom": "19.3.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.4.1",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "dev": "npm run dev --workspace @labai/web",
+    "build": "npm run build --workspace @labai/web",
+    "start": "npm run start --workspace @labai/web",
+    "lint": "npm run lint --workspace @labai/web",
+    "typecheck": "npm run typecheck --workspace @labai/web",
+    "check:styles": "npm run check:styles --workspace @labai/web",
+    "api:dev": "go -C services/api run ./cmd/api",
+    "api:fmt": "go -C services/api fmt ./...",
+    "api:build": "go -C services/api build ./...",
+    "api:vet": "go -C services/api vet ./..."
   }
 }
