@@ -764,23 +764,24 @@
 .svg-assistant { position: relative; display: flex; flex: 0 0 auto; align-items: center; }
 .svg-assistant-trigger {
   display: inline-flex;
-  min-width: var(--control-height);
   min-height: var(--control-height);
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  padding: 0 13px;
-  background: var(--sky-soft);
-  color: var(--sky-ink);
+  gap: 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0 14px 0 6px;
+  background: transparent;
+  color: var(--ink);
   font: var(--weight-semibold) var(--text-sm) var(--font-sans), Arial, sans-serif;
   cursor: pointer;
   transition: transform var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
 }
 .svg-assistant-trigger:active { transform: scale(.97); }
-.svg-assistant-trigger[aria-pressed="true"] { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }
+.svg-assistant-trigger[aria-pressed="true"] { border-color: color-mix(in srgb, var(--sky-ink) 22%, var(--border)); background: color-mix(in srgb, var(--sky-soft) 70%, var(--surface)); }
 .svg-assistant-trigger:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.svg-assistant-mark { display: inline-flex; flex: none; width: 30px; height: 30px; align-items: center; justify-content: center; pointer-events: none; }
+.svg-assistant-mark > * { flex: none; }
+.svg-assistant-stop { color: var(--ink-muted); fill: currentColor; }
 .svg-assistant-bubble {
   position: absolute;
   z-index: 61;
@@ -830,8 +831,8 @@
 @keyframes svg-assistant-cloud { 50% { transform: scale(1.08); } }
 @keyframes svg-assistant-voice { to { transform: scaleY(.55); } }
 @media (hover: hover) and (pointer: fine) {
-  .svg-assistant-trigger:hover { border-color: var(--sky-ink); background: color-mix(in srgb, var(--sky-soft) 72%, var(--surface)); }
-  .svg-assistant-trigger[aria-pressed="true"]:hover { border-color: var(--primary-hover); background: var(--primary-hover); }
+  .svg-assistant-trigger:hover { background: var(--surface-subtle); }
+  .svg-assistant-trigger[aria-pressed="true"]:hover { background: color-mix(in srgb, var(--sky-soft) 90%, var(--surface)); }
 }
 
 @media (max-width: 720px) {
@@ -842,8 +843,8 @@
   .svg-tools-picker-label { display: none; }
   .svg-tools-picker-trigger { min-width: 112px; min-height: var(--control-height); gap: var(--space-2); padding-inline: var(--space-2); font-size: 12px; }
   .svg-tools-controls-toggle { padding: 0 12px; font-size: 12px; }
-  .svg-assistant-trigger { width: 44px; min-width: 44px; padding: 0; }
-  .svg-assistant-trigger span { display: none; }
+  .svg-assistant-trigger { width: 44px; min-width: 44px; justify-content: center; padding: 0; }
+  .svg-assistant-label, .svg-assistant-stop { display: none; }
   .svg-assistant-bubble { right: -7px; }
   .svg-tools .rocket-art { max-width: min(100%, calc((100dvh - 265px) * 1.08)); }
   .svg-tools .rocket-telemetry { grid-template-columns: repeat(2,1fr); gap: 14px; }

@@ -32,7 +32,8 @@ func TestCreateTokenUsesSingleConstrainedAudioSession(t *testing.T) {
 			Constraints          struct {
 				Model  string `json:"model"`
 				Config struct {
-					ResponseModalities []string `json:"responseModalities"`
+					SessionResumption  json.RawMessage `json:"sessionResumption"`
+					ResponseModalities []string        `json:"responseModalities"`
 				} `json:"config"`
 			} `json:"liveConnectConstraints"`
 		}
@@ -45,6 +46,9 @@ func TestCreateTokenUsesSingleConstrainedAudioSession(t *testing.T) {
 		}
 		if len(body.Constraints.Config.ResponseModalities) != 1 || body.Constraints.Config.ResponseModalities[0] != "AUDIO" {
 			t.Errorf("token does not require audio output: %+v", body.Constraints.Config)
+		}
+		if string(body.Constraints.Config.SessionResumption) != "{}" {
+			t.Errorf("token does not constrain session resumption: %s", body.Constraints.Config.SessionResumption)
 		}
 		if time.Until(body.NewSessionExpireTime) < 0 || time.Until(body.NewSessionExpireTime) > 61*time.Second {
 			t.Errorf("unexpected new-session expiry: %s", body.NewSessionExpireTime)

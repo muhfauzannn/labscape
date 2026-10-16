@@ -1,6 +1,7 @@
 "use client";
 
-import { Mic, X } from "lucide-react";
+import { Square } from "lucide-react";
+import { Orb, defineOrbTheme, type OrbAdapter, type OrbSignal, type OrbSignalListener } from "orb-ui";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 type AssistantStatus = "idle" | "connecting" | "listening" | "thinking" | "speaking" | "error";
@@ -17,6 +18,9 @@ type LiveSession = {
   stream: MediaStream;
   audio: AudioContext;
   source: MediaStreamAudioSourceNode;
+  output: GainNode;
+  inputMeter: AnalyserNode;
+  outputMeter: AnalyserNode;
   processor: AudioWorkletNode;
   sources: Set<AudioBufferSourceNode>;
   scheduledAt: number;
@@ -210,6 +214,40 @@ function stopPlayback(session: LiveSession) {
   session.scheduledAt = session.audio.currentTime;
 }
 
+/** A tiny orb-ui adapter: the session pushes its state and live mic / voice levels into it. */
+type OrbBridge = OrbAdapter & { emit(next: Partial<OrbSignal>): void };
+function createOrbBridge(): OrbBridge {
+  const listeners = new Set<OrbSignalListener>();
+  let signal: OrbSignal = { state: "idle", inputVolume: 0, outputVolume: 0 };
+  return {
+    subscribe(listener) {
+      listeners.add(listener);
+      listener(signal);
+      return () => listeners.delete(listener);
+    },
+    emit(next) {
+      signal = { ...signal, ...next };
+      listeners.forEach((listener) => listener(signal));
+    },
+  };
+}
+
+const levelBuffer = new Float32Array(1024);
+function levelOf(meter: AnalyserNode) {
+  meter.getFloatTimeDomainData(levelBuffer);
+  let sum = 0;
+  for (let index = 0; index < levelBuffer.length; index++) sum += levelBuffer[index] * levelBuffer[index];
+  return Math.min(1, Math.sqrt(sum / levelBuffer.length) * 5);
+}
+
+const ORB_THEME = defineOrbTheme({
+  name: "circle",
+  preset: "calm",
+  appearance: {
+    colors: { idle: "#206487", connecting: "#5f8fb0", listening: "#2f86b4", thinking: "#6f9a63", speaking: "#40663a", error: "#b83e36" },
+  },
+});
+
 function cleanup(session: LiveSession) {
   session.intentionalClose = true;
   if (session.contextTimer) clearTimeout(session.contextTimer);
@@ -217,6 +255,8 @@ function cleanup(session: LiveSession) {
   stopPlayback(session);
   session.processor.port.onmessage = null;
   session.source.disconnect();
+  session.output.disconnect();
+  session.outputMeter.disconnect();
   session.processor.disconnect();
   session.stream.getTracks().forEach((track) => track.stop());
   if (session.socket.readyState < WebSocket.CLOSING) session.socket.close();
@@ -243,6 +283,7 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
   const connectRef = useRef(false);
   const cancelConnectRef = useRef(false);
   const connectAbortRef = useRef<AbortController | null>(null);
+  const [orb] = useState(createOrbBridge);
 
   useEffect(() => {
     toolRef.current = { id: toolId, label: toolLabel, root: toolRoot };
@@ -294,7 +335,7 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
 
     const source = session.audio.createBufferSource();
     source.buffer = audioBuffer;
-    source.connect(session.audio.destination);
+    source.connect(session.output);
     const startsAt = Math.max(session.audio.currentTime + 0.015, session.scheduledAt);
     session.scheduledAt = startsAt + audioBuffer.duration;
     session.sources.add(source);
@@ -433,6 +474,9 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
         stream,
         audio,
         source: audio.createMediaStreamSource(stream),
+        output: audio.createGain(),
+        inputMeter: audio.createAnalyser(),
+        outputMeter: audio.createAnalyser(),
         processor: new AudioWorkletNode(audio, "gemini-pcm-capture"),
         sources: new Set(),
         scheduledAt: audio.currentTime,
@@ -444,6 +488,9 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
         setupTimer: null,
         intentionalClose: false,
       };
+      session.source.connect(session.inputMeter);
+      session.output.connect(session.outputMeter);
+      session.outputMeter.connect(audio.destination);
       sessionRef.current = session;
       session.setupTimer = setTimeout(() => {
         if (sessionRef.current === session && !session.ready) {
@@ -611,12 +658,25 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
     if (session) cleanup(session);
   }, []);
 
+  useEffect(() => {
+    orb.emit({ state: status, inputVolume: 0, outputVolume: 0 });
+    if (status === "idle" || status === "error") return;
+    let frame = 0;
+    const meter = () => {
+      const session = sessionRef.current;
+      if (session) orb.emit({ inputVolume: levelOf(session.inputMeter), outputVolume: levelOf(session.outputMeter) });
+      frame = requestAnimationFrame(meter);
+    };
+    frame = requestAnimationFrame(meter);
+    return () => cancelAnimationFrame(frame);
+  }, [orb, status]);
+
   const active = status !== "idle" && status !== "error";
   const statusLabel = status === "connecting" ? "Menghubungkan" : status === "listening" ? "Mendengarkan" : status === "thinking" ? "Sebentar ya" : status === "speaking" ? "Labai sedang bicara" : "Asisten suara";
   const speech = error || assistantText || (status === "connecting" ? "Menyiapkan suara…" : status === "error" ? "Asisten suara belum tersedia." : "Silakan bicara. Aku mengikuti alat yang sedang terbuka.");
 
   return (
-    <div className="svg-assistant" data-active={active} data-speaking={status === "speaking"} data-error={status === "error"}>
+    <div className="svg-assistant" data-active={active} data-status={status} data-speaking={status === "speaking"} data-error={status === "error"}>
       {(active || error) && (
         <section className="svg-assistant-bubble" aria-live="polite" aria-label="Percakapan dengan asisten suara">
           <div className="svg-assistant-bubble-top">
@@ -636,8 +696,9 @@ export function LiveAssistant({ toolId, toolLabel, toolRoot }: Props) {
         aria-pressed={active}
         title={active ? "Akhiri percakapan" : "Tanya alat ini"}
       >
-        {active ? <X size={18} aria-hidden="true" /> : <Mic size={18} aria-hidden="true" />}
-        <span>{active ? "Selesai" : "Tanya AI"}</span>
+        <span className="svg-assistant-mark" aria-hidden="true"><Orb adapter={orb} theme={ORB_THEME} size={30} interactive={false} aria-hidden /></span>
+        <span className="svg-assistant-label">{active ? "Selesai" : "Tanya Labai"}</span>
+        {active && <Square className="svg-assistant-stop" size={10} aria-hidden="true" />}
       </button>
       <span className="svg-assistant-sr" role="status">{error}</span>
     </div>

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -37,6 +38,7 @@ type tokenRequest struct {
 	LiveConnectConstraints struct {
 		Model  string `json:"model"`
 		Config struct {
+			SessionResumption  struct{} `json:"sessionResumption"`
 			ResponseModalities []string `json:"responseModalities"`
 		} `json:"config"`
 	} `json:"liveConnectConstraints"`
@@ -96,14 +98,31 @@ func (i *TokenIssuer) CreateToken(ctx context.Context) (Token, error) {
 	}
 	defer response.Body.Close()
 
+	responseBody, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+	if err != nil {
+		return Token{}, fmt.Errorf("%w: read response", ErrProvider)
+	}
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		var providerError struct {
+			Error struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		_ = json.Unmarshal(responseBody, &providerError)
+		reason := strings.TrimSpace(providerError.Error.Message)
+		if len(reason) > 300 {
+			reason = reason[:300]
+		}
+		if reason != "" {
+			return Token{}, fmt.Errorf("%w: status %d: %s", ErrProvider, response.StatusCode, reason)
+		}
 		return Token{}, fmt.Errorf("%w: status %d", ErrProvider, response.StatusCode)
 	}
 
 	var result struct {
 		Name string `json:"name"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(nil, response.Body, 1<<20)).Decode(&result); err != nil {
+	if err := json.NewDecoder(bytes.NewReader(responseBody)).Decode(&result); err != nil {
 		return Token{}, fmt.Errorf("decode Gemini Live token: %w", err)
 	}
 	if strings.TrimSpace(result.Name) == "" {
