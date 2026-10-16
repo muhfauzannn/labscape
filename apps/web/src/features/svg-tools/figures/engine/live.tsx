@@ -137,14 +137,12 @@ export function EngineLive({artwork,turn,mesh,model}:{artwork:React.ReactNode;tu
   const slider=(id:keyof Pick<Controls,"throttle"|"targetRPM"|"load"|"advance"|"slow">,label:string,min:number,max:number,step:number,unit:string)=> <label className="engine-slider" key={id}><span>{label}<output>{id==="slow"?`${Math.round(1/controls.slow)}× slower`:controls[id].toLocaleString("en-US")+unit}</output></span><input type="range" min={min} max={max} step={step} value={controls[id]} onChange={e=>update(id,Number(e.target.value))}/></label>;
   return <figure ref={root} className="engine-lab iso" data-theme={theme} data-highlight={highlight}>
     <div className="engine-topbar"><span><b>FIG. 04</b><i/> ENGINE</span><div><span className="engine-state-dot"/><output data-value="status">Engine is off</output><Button variant="secondary" onClick={()=>setTheme(theme==="light"?"dark":"light")} aria-label={`Switch to ${theme==="light"?"night":"day"} view`}>{theme==="light"?"◐":"◑"}</Button></div></div>
-    <div className="engine-gauges"><Gauge id="pressure" label={`Cylinder ${cylinder+1} pressure`} unit="bar" max={110}/><Gauge id="temperature" label={`Cylinder ${cylinder+1} temperature`} unit="°C" max={3200}/><Gauge id="torque" label="Turning force" unit="N·m" min={-20} max={120}/><Gauge id="rpm" label="Engine speed" unit="rpm" max={6500}/></div>
     <div className="engine-main">
       <div className="engine-visual-panel">
         <div className="engine-view-top"><span>Inside the engine <i/> <output data-value="renderer">3D view</output></span></div>
         <div ref={stage} className="engine-stage iso-turn" tabIndex={0} role="group" aria-label="Interactive engine. Drag to turn the view. Left and right arrows move the parts, Space pauses, and R resets the view.">
           <div className="engine-scene">{artwork}<canvas className="engine-gl" aria-hidden="true"/><svg className="engine-gas iso-layer" viewBox="0 0 1000 740" aria-hidden="true"><defs>{[0,1].map(i=><clipPath id={`engine-gas-${i}`} key={i}><path data-gas-clip={i}/></clipPath>)}</defs>{[0,1].map(i=><g key={i}><path data-gas={i}/><path data-spray={i} clipPath={`url(#engine-gas-${i})`} fill="#e2b467"/><g data-spark={i} opacity="0"><path d="M0 -6L1.5 -1.5L6 0L1.5 1.5L0 6L-1.5 1.5L-6 0L-1.5 -1.5Z" fill="#ffd28a"/><circle r="1.4" fill="#fffbea"/></g></g>)}</svg></div>
           <div className="engine-view-corner"><b>Drag to turn</b><span>Look inside the engine</span></div>
-          <div className="engine-view-tools"><Button variant="secondary" onClick={()=>commands.current?.zoom(.1)} aria-label="Zoom in">+</Button><Button variant="secondary" onClick={()=>commands.current?.zoom(-.1)} aria-label="Zoom out">−</Button><Button variant="secondary" onClick={()=>commands.current?.tilt(6)} aria-label="Tilt view up">⌃</Button><Button variant="secondary" onClick={()=>commands.current?.tilt(-6)} aria-label="Tilt view down">⌄</Button><Button variant="secondary" onClick={()=>commands.current?.resetView()} aria-label="Reset 3D view">↺</Button></div>
         </div>
         <div className="engine-cylinder-strip"><span><i className="cylinder-one"/> 1 <b data-value="cylinder-phase-0">Air in</b></span><span><i className="cylinder-two"/> 2 <b data-value="cylinder-phase-1">Gas out</b></span><span>Top shaft <b data-value="cam-angle">0.0°</b></span></div>
       </div>
@@ -155,11 +153,16 @@ export function EngineLive({artwork,turn,mesh,model}:{artwork:React.ReactNode;tu
           <span className="engine-control-section-title">Cylinder</span>
           <div>{[0,1].map(index=><Button key={index} variant="secondary" aria-pressed={cylinder===index} onClick={()=>{setCylinder(index);commands.current?.cylinder(index);}}>Cylinder {index+1}</Button>)}</div>
         </section>
+        <div className="engine-gauges" aria-label="Engine readings"><Gauge id="pressure" label={`Cylinder ${cylinder+1} pressure`} unit="bar" max={110}/><Gauge id="temperature" label={`Cylinder ${cylinder+1} temperature`} unit="°C" max={3200}/><Gauge id="torque" label="Turning force" unit="N·m" min={-20} max={120}/><Gauge id="rpm" label="Engine speed" unit="rpm" max={6500}/></div>
         <section className="engine-primary-controls" aria-label="Main engine settings">
           {slider("throttle","Maximum power",0,100,1,"%")}
           <div className="engine-opening"><span>Current power</span><output data-value="opening">12%</output></div>
           <div className="engine-switch-row"><Button variant="secondary" aria-pressed={controls.ignition} onClick={()=>update("ignition",!controls.ignition)}><i/> Spark <b>{controls.ignition?"On":"Off"}</b></Button><Button variant="secondary" aria-pressed={controls.injection} onClick={()=>update("injection",!controls.injection)}><i/> Fuel <b>{controls.injection?"On":"Off"}</b></Button></div>
         </section>
+        <details className="engine-view-settings">
+          <summary>Adjust view</summary>
+          <div className="engine-view-control-buttons"><Button variant="secondary" onClick={()=>commands.current?.zoom(.1)} aria-label="Zoom in" title="Zoom in">+</Button><Button variant="secondary" onClick={()=>commands.current?.zoom(-.1)} aria-label="Zoom out" title="Zoom out">−</Button><Button variant="secondary" onClick={()=>commands.current?.tilt(6)} aria-label="Tilt view up" title="Tilt view up">⌃</Button><Button variant="secondary" onClick={()=>commands.current?.tilt(-6)} aria-label="Tilt view down" title="Tilt view down">⌄</Button><Button variant="secondary" onClick={()=>commands.current?.resetView()} aria-label="Reset 3D view" title="Reset view">↺</Button></div>
+        </details>
         <details className="engine-component-controls">
           <summary>Highlight a part</summary>
           <div className="engine-components">{COMPONENTS.map(p=><Button variant="secondary" key={p.id} aria-pressed={highlight===p.id} onClick={()=>setHighlight(highlight===p.id?"":p.id)}>{p.label}</Button>)}</div>
