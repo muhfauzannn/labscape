@@ -123,7 +123,7 @@
 .suggestions > span {
   color: #ffffffdb;
 }
-.suggestions button {
+.suggestions a {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -137,11 +137,11 @@
     background var(--duration-fast) var(--ease),
     transform var(--duration-fast) var(--ease);
 }
-.suggestions button:active:not(:focus-visible) {
+.suggestions a:active:not(:focus-visible) {
   transform: scale(0.97);
 }
 @media (hover: hover) and (pointer: fine) {
-  .suggestions button:hover {
+  .suggestions a:hover {
     background: var(--surface);
   }
 }
@@ -242,113 +242,86 @@
 }
 .previewCanvas {
   position: relative;
-  padding: 0 var(--space-10) var(--space-6);
-  background: var(--mint-soft);
-  border: 1px solid #dde8d7;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
   min-height: 425px;
-  background-image: radial-gradient(#40663a17 0.7px, transparent 0.7px);
-  background-size: 12px 12px;
+  border-radius: 12px;
+  /* Matches the tools' own backdrop, so the screenshot runs edge to edge without a seam. */
+  background: linear-gradient(180deg, #e7f1f7 0%, #f6f8f8 60%, #fafaf9 100%);
 }
-.browserBar {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  width: calc(100% + 80px);
-  padding: var(--space-4);
-  align-self: flex-start;
-  color: var(--mint-ink);
+.matchNote {
+  min-height: 0;
+  margin: 0 auto;
+  color: #fff;
+  font-size: var(--text-xs);
+  text-shadow: 0 1px 8px #10445e88;
 }
-.browserBar > span:not(:last-child) {
-  width: 6px;
-  height: 6px;
-  background: #40663a40;
-  border-radius: var(--radius-pill);
+.matchNote[data-visible="true"] {
+  margin: calc(var(--space-2) * -1) auto var(--space-3);
 }
-.browserLabel {
-  margin-left: var(--space-2);
-  font-size: 10px;
-  opacity: 0.75;
+.shot {
+  position: absolute;
+  inset: 0;
+  display: block;
 }
-.previewCard {
+.shot img {
+  display: block;
   width: 100%;
-  max-width: 350px;
-  padding: var(--space-6);
-  background: var(--surface);
-  border: 1px solid #d8e0d1;
-  border-radius: var(--radius-card);
-  box-shadow: 0 8px 24px #3f573115;
-  transform: rotate(-1.5deg);
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 400ms var(--ease);
 }
-.formPreview {
+.shot:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+  border-radius: 12px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .shot:hover img {
+    transform: scale(1.02);
+  }
+}
+.askBubble {
+  position: absolute;
+  left: var(--space-4);
+  bottom: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 6px;
+  max-width: min(300px, calc(100% - 32px));
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px 16px 16px 6px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--shadow-float);
+  backdrop-filter: blur(12px);
   text-align: left;
 }
-.formIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  background: var(--butter-soft);
-  color: var(--butter-ink);
-  border-radius: 11px;
-}
-.formPreview h3 {
-  font-size: var(--text-xl);
-  letter-spacing: -0.035em;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
-}
-.formPreview > p {
-  margin-top: -6px;
-  font-size: var(--text-xs);
-  color: var(--ink-secondary);
-}
-.formPreview > button {
-  align-self: flex-start;
-}
-.formNote {
-  font-size: 9px;
-  color: var(--ink-muted);
-}
-.madeWith {
-  font-size: 10px;
-  color: var(--mint-ink);
-  margin-top: var(--space-4);
-}
-.madeWith strong {
-  font-size: var(--text-sm);
-  letter-spacing: -0.05em;
-  margin-left: 4px;
-}
-.success {
-  min-height: 280px;
+.askTop {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  gap: var(--space-4);
-  text-align: center;
-}
-.successIcon {
-  display: grid;
-  place-items: center;
-  background: var(--mint-soft);
-  color: var(--mint-ink);
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-pill);
-}
-.success p {
+  gap: 6px;
   color: var(--ink-secondary);
-  font-size: var(--text-sm);
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+}
+.askTop em {
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-subtle);
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-style: normal;
+}
+.askUser {
+  color: var(--ink-muted);
+  font-size: 11px;
+}
+.askReply {
+  color: var(--ink);
+  font-size: 12.5px;
+  line-height: 1.45;
 }
 .foundation {
   text-align: center;
@@ -461,15 +434,6 @@
   .productInfo h2 {
     font-size: var(--text-2xl);
   }
-  .previewCanvas {
-    padding-inline: var(--space-4);
-  }
-  .browserBar {
-    width: calc(100% + 32px);
-  }
-  .previewCard {
-    padding: var(--space-5);
-  }
 }
 @media (max-width: 600px) {
   .heroCopy {
@@ -522,10 +486,8 @@
     gap: var(--space-2);
   }
   .previewCanvas {
-    padding-inline: var(--space-6);
-  }
-  .browserBar {
-    width: calc(100% + 48px);
+    min-height: 0;
+    aspect-ratio: 4 / 3;
   }
   .productTabs > button {
     font-size: var(--text-xs);

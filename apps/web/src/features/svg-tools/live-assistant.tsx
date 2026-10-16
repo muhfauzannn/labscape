@@ -53,12 +53,12 @@ const liveEndpoint =
   "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained";
 
 const toolDescriptions: Record<string, string> = {
-  microscope: "A microscope cutaway that shows how light travels through the lenses.",
   computer: "An interactive computer keyboard that shows what happens when you type.",
   rocket: "A rocket launch demo with selectable parts, engine power, and live flight readings.",
   engine: "A two-cylinder engine demo with moving pistons, valves, engine settings, and live readings.",
   "microscope-lab": "A laboratory microscope with selectable parts, lenses, focus, light, and a sample view.",
   typewriter: "A mechanical typewriter demo. Typing moves the keys and typebars and updates the line and column on the paper.",
+  printer: "An FDM 3D printer. Pick an object, set print speed and nozzle temperature, start or pause the print, and open the exploded view to inspect each part.",
 };
 
 const toolFunctions = [

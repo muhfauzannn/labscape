@@ -26,7 +26,7 @@ export default async function DashboardPage() {
         <span className={styles.eyebrow}>Dashboard</span>
         <h1>Welcome back, {user.name}.</h1>
         <p>You are signed in as {user.email}.</p>
-        <Link href="/tools/svg" className={styles.link}>Explore SVG tools →</Link>
+        <Link href="/start" className={styles.link}>Explore SVG tools →</Link>
       </section>
     </main>
   );

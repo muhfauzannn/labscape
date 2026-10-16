@@ -4,16 +4,10 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronDown, SlidersHorizontal, X } from "lucide-react";
+import { toolCatalog } from "@/lib/tool-catalog";
 import { LiveAssistant } from "./live-assistant";
 
-const figures = [
-  { id: "computer", label: "Computer" },
-  { id: "rocket", label: "Rocket" },
-  { id: "engine", label: "Engine" },
-  { id: "microscope-lab", label: "Microscope" },
-  { id: "typewriter", label: "Typewriter" },
-  { id: "printer", label: "3D printer" },
-] as const;
+const figures = toolCatalog;
 
 type FigureId = (typeof figures)[number]["id"];
 
@@ -70,7 +64,7 @@ export function SvgTools() {
 
   function selectFigure(id: FigureId) {
     setSelected(id);
-    // Keep the address shareable: /tools/svg?tool=rocket opens the rocket.
+    // Keep the address shareable: /start?tool=rocket opens the rocket.
     window.history.replaceState(null, "", `?tool=${id}`);
     setControlsOpen(false);
     setPickerOpen(false);

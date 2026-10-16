@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useState, type FormEvent } from "react";
-import { Check, Eye, EyeOff, LockKeyhole, Mail, MousePointer2 } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import styles from "./login-screen.module.css";
 
 export function LoginScreen() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -29,8 +28,9 @@ export function LoginScreen() {
         setError(result.message || "Tidak dapat masuk saat ini.");
         return;
       }
-      router.replace("/dashboard");
-      router.refresh();
+      const next = new URLSearchParams(window.location.search).get("next");
+      const destination = next === "/start" || next?.startsWith("/start?") ? next : "/dashboard";
+      window.location.replace(destination);
     } catch {
       setError("Koneksi bermasalah. Coba lagi.");
     } finally {
@@ -67,36 +67,21 @@ export function LoginScreen() {
             {error && <p className={styles.error} id="login-error" role="alert">{error}</p>}
             <button className={styles.submit} type="submit" disabled={pending}>{pending ? "Signing in…" : "Sign in with email"}</button>
           </form>
-          <p className={styles.help}>Sign in with the account provided to you.</p>
         </div>
       </div>
 
-      <aside className={styles.visual} aria-label="Labai product preview">
+      <aside className={styles.visual} aria-label="Labai interactive learning">
+        <Image
+          className={styles.visualImage}
+          src="/images/login-lab.png"
+          alt=""
+          fill
+          sizes="(max-width: 700px) 0px, 50vw"
+          preload
+        />
         <div className={styles.visualCopy}>
-          <h2>Make every response count.</h2>
-          <p>Collect answers beautifully, then put them to work.</p>
-        </div>
-        <div className={styles.art} aria-hidden="true">
-          <div className={styles.tableCard}>
-            <div className={styles.tableTitle}><span className={styles.sheetIcon}>▦</span> Registrations</div>
-            <div className={styles.tableHeader}><span>Name</span><span>Submitted</span><span>Status</span></div>
-            <div className={styles.tableRow}><strong>Maya Chen</strong><span>Just now</span><span className={styles.newBadge}>New</span></div>
-            <div className={styles.tableGhost}><span /><span /><span /></div>
-            <div className={styles.tableGhost}><span /><span /><span /></div>
-            <div className={styles.tableGhost}><span /><span /><span /></div>
-          </div>
-          <div className={styles.formCard}>
-            <div className={styles.formTitle}><span className={styles.formIcon}>▣</span> Summit registration</div>
-            <div className={styles.previewField}>Name <span>Maya Chen</span></div>
-            <div className={styles.previewField}>Email <span>maya@northwind.co</span></div>
-            <div className={styles.previewButton}>Submit</div>
-            <MousePointer2 className={styles.pointer} size={26} fill="#3262bc" stroke="white" />
-          </div>
-          <div className={styles.sentCard}><span className={styles.sentIcon}>↪</span> Send confirmation <span className={styles.sentBadge}><Check size={11} /> Sent</span></div>
-          <div className={styles.chartCard}>
-            <div className={styles.chartTitle}><span>✦</span> Attendance</div>
-            <div className={styles.bars}>{[30, 38, 33, 52, 44, 65, 76].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</div>
-          </div>
+          <h2>Learn how things work.</h2>
+          <p>Explore machines, try the controls, and discover what makes them move.</p>
         </div>
       </aside>
     </div>
