@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { LiveAssistant } from "./live-assistant";
@@ -26,7 +27,10 @@ const tools = {
 };
 
 export function SvgTools() {
-  const [selected, setSelected] = useState<FigureId>("computer");
+  const requested = useSearchParams().get("tool");
+  const [selected, setSelected] = useState<FigureId>(
+    () => figures.find((figure) => figure.id === requested)?.id ?? "computer",
+  );
   const [controlsOpen, setControlsOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const figureRootRef = useRef<HTMLDivElement>(null);
@@ -66,6 +70,8 @@ export function SvgTools() {
 
   function selectFigure(id: FigureId) {
     setSelected(id);
+    // Keep the address shareable: /tools/svg?tool=rocket opens the rocket.
+    window.history.replaceState(null, "", `?tool=${id}`);
     setControlsOpen(false);
     setPickerOpen(false);
     window.scrollTo(0, 0);
