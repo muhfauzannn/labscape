@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@/features/auth/server/auth";
+import { hasAllowedOrigin } from "@/features/auth/server/origin";
 
 export async function POST(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  if (origin !== request.nextUrl.origin) {
+  if (!hasAllowedOrigin(request)) {
     return NextResponse.json({ message: "Permintaan tidak diizinkan." }, { status: 403 });
   }
   if (!request.headers.get("content-type")?.startsWith("application/json")) {

@@ -5,6 +5,7 @@ services:
       dockerfile: apps/web/Dockerfile
     environment:
       LABAI_AUTH_DB: /app/apps/web/data/auth.sqlite
+      LABAI_PUBLIC_ORIGIN: https://labscape.muhfauzan.dev
       SEED_EMAIL: ${SEED_EMAIL:-}
       SEED_PASSWORD: ${SEED_PASSWORD:-}
       SEED_NAME: ${SEED_NAME:-}
