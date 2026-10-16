@@ -72,6 +72,12 @@ const templateLinks: NavigationCardProps[] = [
 
 const resourceLinks: NavigationCardProps[] = [
   {
+    title: "SVG tools",
+    description: "Interactive figures.",
+    href: "/tools/svg",
+    icon: Layers2,
+  },
+  {
     title: "Design system",
     description: "Tokens, components, and examples.",
     href: "/design-system",
@@ -169,6 +175,7 @@ function MobileNavigation({ onNavigate }: { onNavigate: () => void }) {
       </div>
       <div className={styles.mobileGroup}>
         <span>Resources</span>
+        <Link href="/tools/svg" onClick={onNavigate}>SVG tools</Link>
         <Link href="/design-system" onClick={onNavigate}>Design system</Link>
         <Link href="/#playground" onClick={onNavigate}>Interactive preview</Link>
       </div>

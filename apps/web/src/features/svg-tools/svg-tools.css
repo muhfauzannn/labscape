@@ -1,0 +1,212 @@
+@import "../../components/iso/iso.css";
+@import "../../components/iso/turn.css";
+@import "./figures/computer/computer.css";
+@import "./figures/engine/engine.css";
+@import "./figures/microscope/microscope.css";
+@import "./figures/microscope-lab/lab.css";
+@import "./figures/rocket/rocket.css";
+
+.svg-tools {
+  --font-geist-sans: var(--font-sans), Arial, sans-serif;
+  --font-geist-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  min-height: calc(100vh - 80px);
+  padding: 48px 24px 80px;
+  background: var(--canvas);
+}
+
+.svg-tools-shell {
+  max-width: var(--content-width);
+  margin: 0 auto;
+}
+
+.svg-tools-heading {
+  margin-bottom: 24px;
+}
+
+.svg-tools-kicker {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-label);
+}
+
+.svg-tools-heading h1 {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-heading);
+  line-height: var(--leading-heading);
+}
+
+.svg-tools-heading p {
+  margin-top: 8px;
+  color: var(--ink-secondary);
+  font-size: var(--text-sm);
+}
+
+.svg-tools-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.svg-tools-workspace {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.svg-tools-workspace-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.svg-tools-workspace-heading h2 {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.025em;
+}
+
+.svg-tools-workspace-heading span {
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.svg-tools-figure {
+  min-width: 0;
+  padding: 20px;
+}
+
+.svg-tools .terminal.iso,
+.svg-tools .rocket.iso,
+.svg-tools .engine-lab.iso,
+.svg-tools .microscope-lab.iso {
+  --anatomy-card: var(--surface);
+  --anatomy-page: var(--canvas);
+  --anatomy-text: var(--ink-secondary);
+  --anatomy-strong: var(--ink);
+  --anatomy-muted: var(--ink-muted);
+  --anatomy-green: var(--mint-ink);
+  --en-bg: var(--surface);
+  --en-panel: var(--surface-subtle);
+  --en-line: var(--border);
+  --en-ink: var(--ink);
+  --en-muted: var(--ink-muted);
+  --rk-bg: var(--surface);
+  --rk-panel: var(--surface-subtle);
+  --rk-line: var(--border);
+  --rk-ink: var(--ink);
+  --rk-muted: var(--ink-muted);
+  --ml-paper: var(--surface);
+  --ml-panel: var(--surface-subtle);
+  --ml-line: var(--border);
+  --ml-ink: var(--ink);
+  --ml-muted: var(--ink-muted);
+  --terminal-card: var(--surface);
+  --terminal-rule: var(--border);
+  --terminal-ink: var(--ink);
+  --terminal-dim: var(--ink-muted);
+  font-family: var(--font-sans), Arial, sans-serif;
+}
+
+.svg-tools .terminal-card,
+.svg-tools .rocket-card,
+.svg-tools .engine-lab,
+.svg-tools .microscope-lab,
+.svg-tools .microscope-figure .iso-plate {
+  border-color: var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+
+.svg-tools .iso button:not(.ml-hotspot),
+.svg-tools .ms-flow-toggle {
+  border-radius: var(--radius-control) !important;
+  border: 1px solid var(--border) !important;
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  font-family: var(--font-sans), Arial, sans-serif !important;
+  font-size: var(--text-xs) !important;
+  font-weight: var(--weight-medium) !important;
+  letter-spacing: 0 !important;
+  cursor: pointer;
+}
+
+.svg-tools .iso button:not(.ml-hotspot):hover,
+.svg-tools .ms-flow-toggle:hover {
+  background: var(--surface-subtle) !important;
+}
+
+.svg-tools .iso button:not(.ml-hotspot)[aria-pressed="true"] {
+  background: var(--mint-soft) !important;
+  color: var(--mint-ink) !important;
+}
+
+.svg-tools .iso button.rocket-launch,
+.svg-tools .iso button.engine-power,
+.svg-tools .iso button.power-button,
+.svg-tools .ms-flow-toggle {
+  background: var(--primary) !important;
+  border: 1px solid var(--primary) !important;
+  color: var(--on-primary) !important;
+  box-shadow: var(--shadow-control);
+}
+
+.svg-tools .iso button.rocket-launch:hover,
+.svg-tools .iso button.engine-power:hover,
+.svg-tools .iso button.power-button:hover,
+.svg-tools .ms-flow-toggle:hover {
+  background: var(--primary-hover) !important;
+}
+
+.svg-tools .iso input[type="range"] {
+  accent-color: var(--primary);
+}
+
+.svg-tools .ml-hotspot b {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--ink);
+}
+
+.svg-tools .ml-hotspot[aria-pressed="true"] b {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.svg-tools .iso-legend,
+.svg-tools .terminal-card-top,
+.svg-tools .rocket-card-top,
+.svg-tools .engine-topbar,
+.svg-tools .ml-corner,
+.svg-tools .ml-mechanism-head,
+.svg-tools .ml-learning,
+.svg-tools .ml-caption,
+.svg-tools .ml-utility button:nth-child(2),
+.svg-tools .engine-caption,
+.svg-tools .engine-control-note,
+.svg-tools .engine-event-panel > p,
+.svg-tools .rocket-part-description p {
+  display: none;
+}
+
+.svg-tools .microscope-figure .iso-plate {
+  background: var(--surface);
+}
+
+@media (max-width: 640px) {
+  .svg-tools { padding: 28px 12px 56px; }
+  .svg-tools-heading h1 { font-size: var(--text-2xl); }
+  .svg-tools-figure { padding: 10px; }
+  .svg-tools-workspace-heading { padding: 16px; }
+  .svg-tools-workspace-heading span { display: none; }
+}
