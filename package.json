@@ -2,23 +2,20 @@
   "name": "labai-monorepo",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "npm@11.19.0",
+  "packageManager": "pnpm@12.11.2",
   "engines": {
     "node": ">=24.0.0 <25"
   },
-  "workspaces": [
-    "apps/*"
-  ],
   "scripts": {
-    "dev": "npm run dev --workspace @labai/web",
-    "build": "npm run build --workspace @labai/web",
-    "start": "npm run start --workspace @labai/web",
-    "lint": "npm run lint --workspace @labai/web",
-    "typecheck": "npm run typecheck --workspace @labai/web",
-    "check:styles": "npm run check:styles --workspace @labai/web",
-    "api:dev": "go -C services/api run ./cmd/api",
-    "api:fmt": "go -C services/api fmt ./...",
-    "api:build": "go -C services/api build ./...",
-    "api:vet": "go -C services/api vet ./..."
+    "dev": "pnpm --filter @labai/web dev",
+    "build": "pnpm --filter @labai/web build",
+    "start": "pnpm --filter @labai/web start",
+    "lint": "pnpm --filter @labai/web lint",
+    "typecheck": "pnpm --filter @labai/web typecheck",
+    "check:styles": "pnpm --filter @labai/web check:styles",
+    "api:dev": "go -C apps/api run ./cmd/api",
+    "api:fmt": "go -C apps/api fmt ./...",
+    "api:build": "go -C apps/api build ./...",
+    "api:vet": "go -C apps/api vet ./..."
   }
 }

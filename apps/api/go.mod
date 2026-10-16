@@ -1,4 +1,4 @@
-module labai/services/api
+module labai/apps/api
 
 go 1.27.0
 
